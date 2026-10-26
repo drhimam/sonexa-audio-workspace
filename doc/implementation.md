@@ -129,3 +129,26 @@
   - Production URL: **[https://sonexa.pages.dev](https://sonexa.pages.dev)**
   - Direct Deployment URL: **https://9adffccf.sonexa.pages.dev**
 - **Verification:** Verified live HTTP response and asset delivery via edge CDN.
+
+---
+
+## 5. Complete Database Export & Import (Cross-Device Data Transfer)
+
+### Motivation & Requirement
+Users wanted a complete offline data migration and transfer mechanism so that all sessions, transcripts, generated documents, folders, audio recordings, and provider configurations could be transferred or backed up to any computer, smartphone, or browser via a single portable JSON file.
+
+### Implementation Architecture
+- **Library (`src/lib/databaseBackup.ts`):**
+  - `exportDatabaseToJson`: Reads all records from Dexie tables (`sessions`, `folders`, `audio`, `settings`). Serializes binary audio blobs into base64 DataURLs using `FileReader` so they remain valid within standard JSON.
+  - `downloadDatabaseBackup`: Automates downloading the generated JSON bundle with formatted naming (`sonexa-database-backup-YYYY-MM-DD-full.json`).
+  - `inspectBackupFile`: Reads candidate JSON files, verifies schema validity and `app: 'Sonexa Audio Workspace'`, and produces an inspection summary (session count, folder count, audio recording count) before executing import.
+  - `importDatabaseFromJson`: Executes atomic Dexie transactions with two user-selected modes:
+    - **Merge Mode (Safe):** Inserts or updates incoming sessions, folders, and audio blobs while preserving existing local records.
+    - **Replace Mode:** Atomically clears local tables and restores the exact state from the JSON backup file.
+- **UI (`src/components/DataBackupModal.tsx`):**
+  - Tabbed interface for **Export** and **Import**.
+  - Backup options: **Complete Backup** (includes audio files) vs. **Lightweight Text Backup** (fast, smaller file size).
+  - Real-time progress indicators showing percentage and serialization state.
+  - File inspection preview displaying item counts prior to confirmation.
+  - Accessible via the **Workspace Header** (Database icon), **Sidebar footer** ("Backup / Transfer"), and the **AI Settings Modal**.
+

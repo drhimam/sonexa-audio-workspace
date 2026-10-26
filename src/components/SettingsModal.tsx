@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   KeyRound, Eye, EyeOff, Loader2, Check, Info, Server, Cpu, RefreshCw,
-  CircleCheck, CircleAlert, Globe, Mic, MessageSquare, ExternalLink,
+  CircleCheck, CircleAlert, Globe, Mic, MessageSquare, ExternalLink, Database,
 } from 'lucide-react';
 import { Modal } from './Modal';
 import type { ProviderCapability, ProviderConfig, ProviderId, ProviderSettings } from '@/lib/types';
@@ -18,6 +18,7 @@ interface SettingsModalProps {
   onClose: () => void;
   settings: ProviderSettings;
   onUpdate: (patch: Partial<ProviderSettings>) => Promise<void>;
+  onOpenBackup?: () => void;
 }
 
 type TabId = 'transcription' | 'chat';
@@ -31,7 +32,7 @@ function toDraft(settings: ProviderSettings): DraftConfigs {
   return draft;
 }
 
-export function SettingsModal({ open, onClose, settings, onUpdate }: SettingsModalProps) {
+export function SettingsModal({ open, onClose, settings, onUpdate, onOpenBackup }: SettingsModalProps) {
   const [tab, setTab] = useState<TabId>('transcription');
   const [draft, setDraft] = useState<DraftConfigs>(() => toDraft(settings));
   const [transcriptionProvider, setTranscriptionProvider] = useState(settings.transcriptionProvider);
@@ -113,6 +114,20 @@ export function SettingsModal({ open, onClose, settings, onUpdate }: SettingsMod
       maxWidth="max-w-xl"
       footer={
         <>
+          {onOpenBackup && (
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onOpenBackup();
+              }}
+              className="btn-outline mr-auto text-xs !py-1.5 flex items-center gap-1.5"
+              title="Export or Import database JSON file"
+            >
+              <Database size={13} className="text-primary" />
+              <span>Backup / Transfer Data</span>
+            </button>
+          )}
           <button onClick={onClose} className="btn-ghost">Cancel</button>
           <button onClick={save} disabled={saving} className="btn-primary">
             {saving ? <Loader2 size={16} className="animate-spin" /> : saved ? <Check size={16} /> : null}

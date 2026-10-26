@@ -1,13 +1,14 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   Settings, Sun, Moon, AudioWaveform, Plus, Cloud,
-  RefreshCw, User as UserIcon, LogOut, Check, ArrowLeft,
+  RefreshCw, User as UserIcon, LogOut, Check, ArrowLeft, Database,
 } from 'lucide-react';
 import { Sidebar } from '@/components/Sidebar';
 import { Workspace } from '@/components/Workspace';
 import { SettingsModal } from '@/components/SettingsModal';
 import { LandingPage } from '@/components/LandingPage';
 import { AuthModal, type AuthMode } from '@/components/AuthModal';
+import { DataBackupModal } from '@/components/DataBackupModal';
 import { useTheme } from '@/lib/useTheme';
 import { useProviderSettings } from '@/lib/useProviderSettings';
 import { useAuth } from '@/lib/useAuth';
@@ -51,6 +52,7 @@ export default function App() {
     open: false,
     mode: 'signin',
   });
+  const [backupOpen, setBackupOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   // Sync view preference
@@ -185,6 +187,7 @@ export default function App() {
         onRenameFolder={handleRenameFolder}
         onDeleteFolder={handleDeleteFolder}
         onMoveSession={handleMoveSession}
+        onOpenBackup={() => setBackupOpen(true)}
       />
 
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -249,6 +252,10 @@ export default function App() {
 
             <button onClick={toggle} className="btn-ghost !p-2 rounded-md" aria-label="Toggle theme">
               {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
+
+            <button onClick={() => setBackupOpen(true)} className="btn-ghost !p-2 rounded-md" aria-label="Backup / Transfer Data" title="Backup & Transfer Database (JSON)">
+              <Database size={16} />
             </button>
 
             <button onClick={() => setSettingsOpen(true)} className="btn-ghost !p-2 rounded-md" aria-label="Settings">
@@ -332,6 +339,7 @@ export default function App() {
           onClose={() => setSettingsOpen(false)}
           settings={settings}
           onUpdate={update}
+          onOpenBackup={() => setBackupOpen(true)}
         />
       )}
 
@@ -340,6 +348,12 @@ export default function App() {
         initialMode={authModal.mode}
         onClose={() => setAuthModal({ open: false, mode: 'signin' })}
         auth={auth}
+      />
+
+      <DataBackupModal
+        open={backupOpen}
+        onClose={() => setBackupOpen(false)}
+        onDataChanged={refreshLocalData}
       />
     </div>
   );

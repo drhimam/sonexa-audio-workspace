@@ -3,7 +3,7 @@ import {
   Plus, Mic, FileText, MessageSquare, Sparkles, Trash2, Search,
   MoreHorizontal, AudioWaveform, Circle, Loader2, CheckCircle2, AlertCircle,
   Folder as FolderIcon, FolderPlus, ChevronRight, ChevronDown, FolderInput,
-  Pencil, type LucideIcon,
+  Pencil, Database, type LucideIcon,
 } from 'lucide-react';
 import type { Folder, Session, SessionStatus } from '@/lib/types';
 import { clsx, formatDate } from '@/lib/utils';
@@ -20,6 +20,7 @@ interface SidebarProps {
   onRenameFolder: (id: string, name: string) => Promise<void>;
   onDeleteFolder: (id: string) => Promise<void>;
   onMoveSession: (sessionId: string, folderId: string | null) => Promise<void>;
+  onOpenBackup?: () => void;
 }
 
 const STATUS_META: Record<SessionStatus, { label: string; icon: LucideIcon; color: string }> = {
@@ -37,6 +38,7 @@ const NO_FOLDER = '__unfiled__';
 export function Sidebar({
   sessions, folders, activeId, onSelect, onNew, onDelete,
   onCreateFolder, onRenameFolder, onDeleteFolder, onMoveSession,
+  onOpenBackup,
 }: SidebarProps) {
   const [query, setQuery] = useState('');
   const [menuId, setMenuId] = useState<string | null>(null);
@@ -231,8 +233,21 @@ export function Sidebar({
             </>
           )}
         </div>
-        <div className="px-3 py-2 border-t border-app text-[10px] text-soft text-center">
-          Local-first · IndexedDB
+        <div className="px-3 py-2 border-t border-app flex items-center justify-between text-[11px] text-soft">
+          <span className="flex items-center gap-1.5 text-muted">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span>IndexedDB</span>
+          </span>
+          {onOpenBackup && (
+            <button
+              onClick={onOpenBackup}
+              className="btn-ghost !py-1 !px-2 text-[11px] text-primary hover:bg-primary/10 rounded flex items-center gap-1"
+              title="Export or Import database JSON file"
+            >
+              <Database size={12} />
+              <span>Backup / Transfer</span>
+            </button>
+          )}
         </div>
       </aside>
 
