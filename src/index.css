@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg: #f7f8fa;
+    --surface: #ffffff;
+    --surface-2: #f1f3f6;
+    --border: #e5e7eb;
+    --text: #111827;
+    --text-muted: #6b7280;
+    --text-soft: #9ca3af;
+  }
+  .dark {
+    --bg: #0b0d12;
+    --surface: #14171e;
+    --surface-2: #1c2029;
+    --border: #262b36;
+    --text: #e7e9ee;
+    --text-muted: #9aa3b2;
+    --text-soft: #6b7280;
+  }
+  html, body, #root { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    transition: background-color 0.25s ease, color 0.25s ease;
+  }
+  * { border-color: var(--border); }
+}
+
+@layer components {
+  .surface { background: var(--surface); }
+  .surface-2 { background: var(--surface-2); }
+  .text-muted { color: var(--text-muted); }
+  .text-soft { color: var(--text-soft); }
+  .border-app { border-color: var(--border); }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-all select-none disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+  .btn-primary { @apply btn bg-primary text-white hover:bg-primary-600 active:scale-[0.98] shadow-sm; }
+  .btn-ghost { @apply btn text-muted hover:bg-black/5 dark:hover:bg-white/10 hover:text-[var(--text)]; }
+  .btn-outline { @apply btn border border-app surface text-[var(--text)] hover:bg-black/[0.03] dark:hover:bg-white/[0.06]; }
+
+  .input {
+    @apply w-full rounded-lg border border-app surface px-3 py-2 text-sm text-[var(--text)] placeholder:text-soft outline-none transition;
+  }
+  .input:focus { @apply ring-2 ring-primary/40 border-primary; }
+
+  .card { @apply surface border border-app rounded-xl; }
+
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+
+  .scroll-thin { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+  .scroll-thin::-webkit-scrollbar { width: 8px; height: 8px; }
+  .scroll-thin::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px; }
+  .scroll-thin::-webkit-scrollbar-track { background: transparent; }
+}
+
+/* Markdown rendering */
+.prose-chat { @apply text-[var(--text)] text-sm leading-relaxed; }
+.prose-chat h1,.prose-chat h2,.prose-chat h3 { @apply font-semibold mt-3 mb-2; }
+.prose-chat h1 { @apply text-base; }
+.prose-chat h2 { @apply text-sm; }
+.prose-chat p { @apply my-2; }
+.prose-chat ul { @apply list-disc pl-5 my-2 space-y-1; }
+.prose-chat ol { @apply list-decimal pl-5 my-2 space-y-1; }
+.prose-chat code { @apply font-mono text-[12px] px-1 py-0.5 rounded surface-2; }
+.prose-chat pre { @apply surface-2 rounded-lg p-3 overflow-x-auto my-2 text-[12px]; }
+.prose-chat pre code { @apply bg-transparent p-0; }
+.prose-chat blockquote { @apply border-l-2 border-primary pl-3 text-muted italic my-2; }
+.prose-chat a { @apply text-primary underline; }
+.prose-chat table { @apply w-full text-xs my-2 border-collapse; }
+.prose-chat th,.prose-chat td { @apply border border-app px-2 py-1 text-left; }
+.prose-chat th { @apply surface-2 font-semibold; }
+
+.prose-doc { @apply text-[var(--text)] text-sm leading-relaxed; }
+.prose-doc h1 { @apply text-xl font-bold mt-5 mb-2; }
+.prose-doc h2 { @apply text-lg font-semibold mt-4 mb-2; }
+.prose-doc h3 { @apply text-base font-semibold mt-3 mb-1; }
+.prose-doc p { @apply my-2; }
+.prose-doc ul { @apply list-disc pl-5 my-2 space-y-1; }
+.prose-doc ol { @apply list-decimal pl-5 my-2 space-y-1; }
+.prose-doc code { @apply font-mono text-[12px] px-1 py-0.5 rounded surface-2; }
+.prose-doc pre { @apply surface-2 rounded-lg p-3 overflow-x-auto my-2 text-[12px]; }
+.prose-doc pre code { @apply bg-transparent p-0; }
+.prose-doc blockquote { @apply border-l-2 border-primary pl-3 text-muted italic my-2; }
+.prose-doc a { @apply text-primary underline; }
+.prose-doc table { @apply w-full text-xs my-3 border-collapse; }
+.prose-doc th,.prose-doc td { @apply border border-app px-2 py-1.5 text-left; }
+.prose-doc th { @apply surface-2 font-semibold; }
