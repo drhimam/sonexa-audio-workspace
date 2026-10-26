@@ -8,7 +8,11 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit -p tsconfig.app.json"
+    "typecheck": "tsc --noEmit -p tsconfig.app.json",
+    "d1:migrate:local": "wrangler d1 execute sonexa-db --local --file=./migrations/0001_initial_schema.sql",
+    "d1:migrate:remote": "wrangler d1 execute sonexa-db --remote --file=./migrations/0001_initial_schema.sql",
+    "pages:dev": "npm run build && wrangler pages dev dist",
+    "deploy": "npm run build && wrangler pages deploy dist --project-name sonexa"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",

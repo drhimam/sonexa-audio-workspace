@@ -1,0 +1,19 @@
+name = "sonexa"
+pages_build_output_dir = "dist"
+compatibility_date = "2024-10-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Cloudflare D1 Database Binding
+[[d1_databases]]
+binding = "DB"
+database_name = "sonexa-db"
+database_id = "placeholder-d1-database-id"
+
+# Environment Variables & Secrets
+# Set secrets via CLI:
+# npx wrangler secret put ZEPTOMAIL_API_KEY
+# npx wrangler secret put ZEPTOMAIL_FROM_ADDRESS
+# npx wrangler secret put JWT_SECRET
+[vars]
+ENVIRONMENT = "production"
+ZEPTOMAIL_FROM_NAME = "Sonexa Audio Workspace"
