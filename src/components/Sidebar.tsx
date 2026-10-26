@@ -16,7 +16,7 @@ interface SidebarProps {
   onSelect: (id: string) => void;
   onNew: (folderId: string | null) => void;
   onDelete: (id: string) => void;
-  onCreateFolder: (name: string) => Promise<void>;
+  onCreateFolder: (name: string) => Promise<void | Folder>;
   onRenameFolder: (id: string, name: string) => Promise<void>;
   onDeleteFolder: (id: string) => Promise<void>;
   onMoveSession: (sessionId: string, folderId: string | null) => Promise<void>;
@@ -97,13 +97,15 @@ export function Sidebar({
           onCloseMobile?.();
         }}
         className={clsx(
-          'group relative rounded-lg px-3 py-2.5 mb-1 cursor-pointer transition-colors',
-          isActive ? 'bg-primary/10' : 'hover:bg-black/[0.03] dark:hover:bg-white/[0.04]',
+          'group relative rounded-xl px-3 py-2 mb-1 cursor-pointer transition-all border',
+          isActive
+            ? 'bg-primary/10 border-primary/40 shadow-xs'
+            : 'border-transparent hover:bg-black/[0.03] dark:hover:bg-white/[0.04] hover:border-app/50'
         )}
       >
         <div className="flex items-start gap-2">
           <div className="min-w-0 flex-1">
-            <p className={clsx('text-sm font-medium truncate', isActive ? 'text-primary' : 'text-[var(--text)]')}>{s.title}</p>
+            <p className={clsx('text-[13px] leading-snug truncate', isActive ? 'text-primary font-semibold' : 'text-[var(--text)] font-normal')}>{s.title}</p>
             <div className="flex items-center gap-1.5 mt-1 text-[11px] text-muted">
               <Icon size={11} className={clsx(meta.color, (s.status === 'transcribing' || s.status === 'enhancing') && 'animate-spin')} />
               <span>{meta.label}</span>
@@ -147,26 +149,78 @@ export function Sidebar({
 
   const renderFolderHeader = (label: string, count: number, key: string, actions?: React.ReactNode) => {
     const isCollapsed = collapsed[key];
+    const isUnfiled = key === NO_FOLDER;
+
     return (
-      <div className="group flex items-center gap-1.5 px-2 py-1.5 mt-3 first:mt-1">
-        <button onClick={() => toggleCollapse(key)} className="btn-ghost !p-0.5 !rounded-md" aria-label={isCollapsed ? 'Expand' : 'Collapse'}>
-          {isCollapsed ? <ChevronRight size={14} className="text-soft" /> : <ChevronDown size={14} className="text-soft" />}
+      <div
+        onClick={() => toggleCollapse(key)}
+        className={clsx(
+          'group cursor-pointer rounded-xl px-2.5 py-2 my-1.5 transition-all border flex items-center gap-2.5 select-none shadow-xs',
+          isUnfiled
+            ? 'border-app/70 bg-black/[0.02] dark:bg-white/[0.02] hover:bg-black/[0.04] dark:hover:bg-white/[0.04]'
+            : 'border-primary/25 bg-primary/[0.04] dark:bg-primary/[0.06] hover:border-primary/45 hover:bg-primary/[0.08]'
+        )}
+      >
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleCollapse(key);
+          }}
+          className="btn-ghost !p-1 !rounded-md shrink-0"
+          aria-label={isCollapsed ? 'Expand folder' : 'Collapse folder'}
+        >
+          {isCollapsed ? (
+            <ChevronRight size={15} className="text-muted" />
+          ) : (
+            <ChevronDown size={15} className="text-muted" />
+          )}
         </button>
-        <FolderIcon size={16} className={clsx(key === NO_FOLDER ? 'text-soft' : 'text-primary')} />
-        <span className={clsx(
-          'font-semibold truncate',
-          key === NO_FOLDER ? 'text-sm text-muted normal-case tracking-normal' : 'text-[15px] text-[var(--text)]',
-        )}>{label}</span>
-        <span className="text-[11px] text-soft">{count}</span>
-        <div className="ml-auto flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition">
-          {key !== NO_FOLDER && (
+
+        <div
+          className={clsx(
+            'w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-xs border',
+            isUnfiled
+              ? 'bg-black/5 dark:bg-white/5 border-app text-muted'
+              : 'bg-primary/20 dark:bg-primary/25 border-primary/30 text-primary'
+          )}
+        >
+          <FolderIcon size={17} />
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <span
+            className={clsx(
+              'block font-bold tracking-tight truncate',
+              isUnfiled ? 'text-[15px] text-muted' : 'text-base text-[var(--text)]'
+            )}
+          >
+            {label}
+          </span>
+        </div>
+
+        <span
+          className={clsx(
+            'px-2 py-0.5 rounded-full text-xs font-semibold shrink-0',
+            isUnfiled ? 'surface-2 text-muted border border-app' : 'bg-primary/15 text-primary'
+          )}
+        >
+          {count}
+        </span>
+
+        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition shrink-0">
+          {!isUnfiled && (
             <button
-              onClick={(e) => { e.stopPropagation(); onNew(key); }}
-              className="btn-ghost !p-1 !rounded-md"
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onNew(key);
+              }}
+              className="btn-ghost !p-1 !rounded-md text-primary hover:bg-primary/10"
               aria-label="New session in this folder"
-              title="New session here"
+              title="Add session to this folder"
             >
-              <Plus size={12} />
+              <Plus size={14} />
             </button>
           )}
           {actions}
@@ -248,22 +302,34 @@ export function Sidebar({
         ) : (
           <>
             {unfiled.length > 0 && (
-              <>
-                {renderFolderHeader('Unfiled', unfiled.length, NO_FOLDER)}
-                {!collapsed[NO_FOLDER] && unfiled.map(renderSession)}
-              </>
+              <div className="mb-3">
+                {renderFolderHeader('Unfiled Library', unfiled.length, NO_FOLDER)}
+                {!collapsed[NO_FOLDER] && (
+                  <div className="pl-3.5 ml-4 border-l-2 border-app/60 space-y-1 mb-2 mt-1 animate-fade-in">
+                    {unfiled.map(renderSession)}
+                  </div>
+                )}
+              </div>
             )}
             {folderOrder.map((f) => {
               const items = grouped.get(f.id) ?? [];
               return (
-                <div key={f.id}>
+                <div key={f.id} className="mb-3">
                   {renderFolderHeader(f.name, items.length, f.id, (
                     <>
-                      <button onClick={(e) => { e.stopPropagation(); openRenameFolder(f); }} className="btn-ghost !p-1 !rounded-md" aria-label="Rename folder"><Pencil size={11} /></button>
-                      <button onClick={(e) => { e.stopPropagation(); onDeleteFolder(f.id); }} className="btn-ghost !p-1 !rounded-md text-red-500 hover:bg-red-500/10" aria-label="Delete folder"><Trash2 size={11} /></button>
+                      <button onClick={(e) => { e.stopPropagation(); openRenameFolder(f); }} className="btn-ghost !p-1 !rounded-md" aria-label="Rename folder" title="Rename folder"><Pencil size={12} /></button>
+                      <button onClick={(e) => { e.stopPropagation(); onDeleteFolder(f.id); }} className="btn-ghost !p-1 !rounded-md text-red-500 hover:bg-red-500/10" aria-label="Delete folder" title="Delete folder"><Trash2 size={12} /></button>
                     </>
                   ))}
-                  {!collapsed[f.id] && items.map(renderSession)}
+                  {!collapsed[f.id] && (
+                    <div className="pl-3.5 ml-4 border-l-2 border-primary/25 dark:border-primary/30 space-y-1 mb-2 mt-1 animate-fade-in">
+                      {items.length === 0 ? (
+                        <p className="text-[11px] text-muted italic py-1 px-2">No sessions in this folder</p>
+                      ) : (
+                        items.map(renderSession)
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}

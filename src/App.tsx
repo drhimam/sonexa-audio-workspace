@@ -10,6 +10,7 @@ import { SettingsModal } from '@/components/SettingsModal';
 import { LandingPage } from '@/components/LandingPage';
 import { AuthModal, type AuthMode } from '@/components/AuthModal';
 import { DataBackupModal } from '@/components/DataBackupModal';
+import { NewSessionModal } from '@/components/NewSessionModal';
 import { usePwaInstall } from '@/lib/usePwaInstall';
 import { useTheme } from '@/lib/useTheme';
 import { useProviderSettings } from '@/lib/useProviderSettings';
@@ -22,20 +23,7 @@ import {
 import type { Folder, Session } from '@/lib/types';
 import { uid } from '@/lib/utils';
 
-function newSession(folderId: string | null = null): Session {
-  const now = Date.now();
-  return {
-    id: uid('sess-'),
-    title: `Session ${new Date(now).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`,
-    createdAt: now,
-    updatedAt: now,
-    status: 'recording',
-    folderId,
-    chat: [],
-    documents: [],
-    savedItems: [],
-  };
-}
+
 
 export default function App() {
   const { theme, toggle } = useTheme();
@@ -58,6 +46,8 @@ export default function App() {
   const [backupOpen, setBackupOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [newSessionModalOpen, setNewSessionModalOpen] = useState(false);
+  const [newSessionFolderId, setNewSessionFolderId] = useState<string | null>(null);
 
   // Sync view preference
   const handleSetView = (v: 'landing' | 'workspace') => {
@@ -100,11 +90,28 @@ export default function App() {
 
   const active = activeId ? sessions.find((s) => s.id === activeId) ?? null : null;
 
-  const handleNew = async (folderId: string | null = null) => {
-    const s = newSession(folderId);
+  const openNewSessionModal = (folderId: string | null = null) => {
+    setNewSessionFolderId(folderId);
+    setNewSessionModalOpen(true);
+  };
+
+  const handleCreateSession = async (title: string, folderId: string | null) => {
+    const now = Date.now();
+    const s: Session = {
+      id: uid('sess-'),
+      title,
+      createdAt: now,
+      updatedAt: now,
+      status: 'recording',
+      folderId,
+      chat: [],
+      documents: [],
+      savedItems: [],
+    };
     await saveSession(s);
     setSessions((prev) => [s, ...prev]);
     setActiveId(s.id);
+    setMobileMenuOpen(false);
   };
 
   const handleSelect = async (id: string) => {
@@ -131,11 +138,12 @@ export default function App() {
 
   // ---- Folder handlers --------------------------------------------------
 
-  const handleCreateFolder = async (name: string) => {
+  const handleCreateFolder = async (name: string): Promise<Folder> => {
     const now = Date.now();
     const folder: Folder = { id: uid('fld-'), name, createdAt: now, updatedAt: now };
     await saveFolder(folder);
     setFolders((prev) => [...prev, folder].sort((a, b) => a.createdAt - b.createdAt));
+    return folder;
   };
 
   const handleRenameFolder = async (id: string, name: string) => {
@@ -187,7 +195,7 @@ export default function App() {
         folders={folders}
         activeId={activeId}
         onSelect={handleSelect}
-        onNew={handleNew}
+        onNew={openNewSessionModal}
         onDelete={handleDelete}
         onCreateFolder={handleCreateFolder}
         onRenameFolder={handleRenameFolder}
@@ -276,7 +284,7 @@ export default function App() {
               </button>
             )}
 
-            <button onClick={() => handleNew(null)} className="btn-ghost !py-1.5 !px-2 text-xs">
+            <button onClick={() => openNewSessionModal(null)} className="btn-ghost !py-1.5 !px-2 text-xs">
               <Plus size={14} /> <span className="hidden sm:inline">New</span>
             </button>
 
@@ -358,7 +366,7 @@ export default function App() {
               onSessionChange={handleSessionChange}
             />
           ) : (
-            <EmptyState onNew={() => handleNew(null)} />
+            <EmptyState onNew={() => openNewSessionModal(null)} />
           )}
         </main>
       </div>
@@ -384,6 +392,15 @@ export default function App() {
         open={backupOpen}
         onClose={() => setBackupOpen(false)}
         onDataChanged={refreshLocalData}
+      />
+
+      <NewSessionModal
+        open={newSessionModalOpen}
+        onClose={() => setNewSessionModalOpen(false)}
+        folders={folders}
+        initialFolderId={newSessionFolderId}
+        onSubmit={handleCreateSession}
+        onCreateFolder={handleCreateFolder}
       />
     </div>
   );

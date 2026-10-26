@@ -269,5 +269,30 @@ Remote conferencing (Zoom, Google Meet, Microsoft Teams, Slack Huddles, Webex) i
 5. **Workspace State Synchronization (`src/components/Workspace.tsx`):**
    - Implemented `updateSavedItem` dispatching session patches that immediately persist to IndexedDB and sync to Cloudflare D1.
 
+---
+
+## 10. Interactive Session Creation Modal & Left Panel Folder Hierarchy Redesign
+
+### Motivation & Requirements
+1. **Interactive Session Initiation:** Users wanted to explicitly name their session and select (or create) the target folder at inception, rather than having sessions automatically created with generic timestamps in an unfiled root directory.
+2. **Left Panel Visual Prominence:** In the sidebar, folders and session titles previously shared similar font sizes (`15px` vs `14px`) and flat styling, making it difficult to distinguish directory boundaries. Users requested folders to be noticeably larger, distinct, and easily identified at a glance.
+
+### Changes Implemented
+1. **New Session Creation Modal (`src/components/NewSessionModal.tsx`):**
+   - Replaced silent session initialization with a dedicated creation modal.
+   - **Session Title Input:** Pre-populates with an editable default timestamp title (`Session Month Day, Time`) or custom name with Enter-to-submit support.
+   - **Folder Location Picker:** Displays selectable folder cards for **Unfiled Library** and each custom folder with active checkmarks and count indicators.
+   - **On-the-Fly Folder Creation:** Integrated an inline "+ New folder" toggle right within the modal, allowing users to create and immediately select a new folder without interrupting the session creation flow.
+   - **Context-Aware Pre-Selection:** When clicking the inline `+` button on a specific folder in the sidebar, that folder is automatically pre-selected.
+2. **Left Panel (Sidebar) Folder Hierarchy Redesign (`src/components/Sidebar.tsx`):**
+   - **Distinct Card Styling:** Transformed folder headers from flat text rows into container cards (`border-primary/25 bg-primary/[0.04]` with hover glow and shadow).
+   - **Prominent Typography & Sizing:** Enlarged folder titles to `text-base font-bold` (16px bold) and styled icon badges (`w-8 h-8 rounded-lg` with `FolderIcon size={17}`), towering visually over session titles (`text-[13px] font-normal`).
+   - **Visual Guide Rails:** Nested sessions beneath each folder inside an indented container with a colored vertical guide line (`pl-3.5 ml-4 border-l-2 border-primary/25`), establishing unmistakable visual grouping.
+   - **Session Count Badges:** Displayed vibrant pill badges (`bg-primary/15 text-primary text-xs font-semibold`) for rapid item count recognition.
+3. **App Architecture Wireup (`src/App.tsx`):**
+   - Routed all "New Session" trigger points (Sidebar main button, folder inline `+`, header top-bar `+ New`, and workspace empty state) through `openNewSessionModal`.
+   - Wired `handleCreateFolder` and `handleCreateSession` to persist changes instantly to Dexie IndexedDB.
+
+
 
 
