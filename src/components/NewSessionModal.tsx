@@ -51,7 +51,7 @@ export function NewSessionModal({
   };
 
   const handleCreateNewFolder = async () => {
-    const trimmed = newFolderName.trim();
+    const trimmed = newFolderName.trim().toUpperCase();
     if (!trimmed || !onCreateFolder || creatingFolderBusy) return;
     setCreatingFolderBusy(true);
     try {
@@ -139,15 +139,15 @@ export function NewSessionModal({
               <div className="flex items-center gap-2">
                 <input
                   value={newFolderName}
-                  onChange={(e) => setNewFolderName(e.target.value)}
+                  onChange={(e) => setNewFolderName(e.target.value.toUpperCase())}
                   onKeyDown={async (e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
                       await handleCreateNewFolder();
                     }
                   }}
-                  placeholder="Folder name (e.g. Lectures, Meetings)…"
-                  className="input text-xs !py-1.5 flex-1"
+                  placeholder="FOLDER NAME (E.G. CLIENT CALLS, MEETINGS)…"
+                  className="input text-xs !py-1.5 flex-1 uppercase font-semibold"
                   autoFocus
                 />
                 <button
@@ -194,7 +194,7 @@ export function NewSessionModal({
                 <FolderIcon size={15} />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="font-semibold text-[var(--text)]">Unfiled</div>
+                <div className="font-bold text-[var(--text)] uppercase tracking-wider text-xs">Unfiled</div>
                 <div className="text-[11px] text-muted">Root library (no folder)</div>
               </div>
               {selectedFolderId === null && <Check size={16} className="text-primary shrink-0" />}
@@ -224,7 +224,9 @@ export function NewSessionModal({
                     <FolderIcon size={15} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="font-bold text-[var(--text)] truncate">{f.name}</div>
+                    <div className="font-bold text-[var(--text)] uppercase tracking-wider text-xs truncate">
+                      {f.name.toUpperCase()}
+                    </div>
                     <div className="text-[11px] text-muted">Folder</div>
                   </div>
                   {isSelected && <Check size={16} className="text-primary shrink-0" />}

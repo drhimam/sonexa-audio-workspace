@@ -36,12 +36,23 @@ export async function onRequestPost(context: { request: Request; env: any }) {
 
     // Send email via ZeptoMail
     const htmlBody = getVerificationEmailHtml(userName, otp);
-    await sendZeptoEmail(env, {
+    const mailResult = await sendZeptoEmail(env, {
       toEmail: normalizedEmail,
       toName: userName,
       subject: 'Your new verification code - Sonexa',
       htmlBody,
     });
+
+    if (!mailResult.success) {
+      console.error('[Resend] ZeptoMail dispatch failed:', mailResult.error);
+      return Response.json(
+        {
+          error: `Could not send verification email: ${mailResult.error || 'ZeptoMail dispatch failed'}. Please check your ZeptoMail configuration.`,
+          mailError: mailResult.error,
+        },
+        { status: 400 }
+      );
+    }
 
     return Response.json({
       success: true,

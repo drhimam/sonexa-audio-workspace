@@ -73,7 +73,7 @@ export function Sidebar({
   const openRenameFolder = (f: Folder) => { setFolderNameDraft(f.name); setFolderModal({ mode: 'rename', folder: f }); };
 
   const submitFolder = async () => {
-    const name = folderNameDraft.trim();
+    const name = folderNameDraft.trim().toUpperCase();
     if (!name) return;
     if (folderModal?.mode === 'create') await onCreateFolder(name);
     else if (folderModal?.mode === 'rename') await onRenameFolder(folderModal.folder.id, name);
@@ -191,11 +191,11 @@ export function Sidebar({
         <div className="min-w-0 flex-1">
           <span
             className={clsx(
-              'block font-bold tracking-tight truncate',
-              isUnfiled ? 'text-[15px] text-muted' : 'text-base text-[var(--text)]'
+              'block font-bold tracking-wider uppercase truncate',
+              isUnfiled ? 'text-[13px] text-muted' : 'text-sm text-[var(--text)]'
             )}
           >
-            {label}
+            {label.toUpperCase()}
           </span>
         </div>
 
@@ -394,14 +394,14 @@ export function Sidebar({
           </>
         }
       >
-        <label className="text-xs font-medium text-muted">Folder name</label>
+        <label className="text-xs font-semibold text-muted uppercase tracking-wider">Folder name (forced uppercase)</label>
         <input
           autoFocus
           value={folderNameDraft}
-          onChange={(e) => setFolderNameDraft(e.target.value)}
+          onChange={(e) => setFolderNameDraft(e.target.value.toUpperCase())}
           onKeyDown={(e) => { if (e.key === 'Enter') submitFolder(); }}
-          placeholder="e.g. Client calls, Research interviews…"
-          className="input mt-1.5 text-sm"
+          placeholder="E.G. CLIENT CALLS, RESEARCH INTERVIEWS…"
+          className="input mt-1.5 text-sm uppercase font-semibold"
         />
       </Modal>
 
@@ -448,7 +448,7 @@ function MoveModal({
           className={clsx('w-full text-left rounded-lg px-3 py-2.5 text-sm flex items-center gap-2 transition-colors',
             session?.folderId == null ? 'bg-primary/10 text-primary' : 'hover:bg-black/5 dark:hover:bg-white/10')}
         >
-          <FolderIcon size={15} className="text-soft" /> Unfiled
+          <FolderIcon size={15} className="text-soft" /> <span className="uppercase font-semibold tracking-wider text-xs">Unfiled</span>
           {session?.folderId == null && <CheckCircle2 size={14} className="ml-auto" />}
         </button>
         {folders.map((f) => (
@@ -459,7 +459,8 @@ function MoveModal({
             className={clsx('w-full text-left rounded-lg px-3 py-2.5 text-sm flex items-center gap-2 transition-colors',
               session?.folderId === f.id ? 'bg-primary/10 text-primary' : 'hover:bg-black/5 dark:hover:bg-white/10')}
           >
-            <FolderIcon size={15} className="text-primary" /> {f.name}
+            <FolderIcon size={15} className="text-primary" />
+            <span className="uppercase font-semibold tracking-wider text-xs">{f.name.toUpperCase()}</span>
             {session?.folderId === f.id && <CheckCircle2 size={14} className="ml-auto" />}
           </button>
         ))}

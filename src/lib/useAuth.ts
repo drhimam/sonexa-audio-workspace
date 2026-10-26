@@ -182,7 +182,8 @@ export function useAuth() {
       if (res.ok) {
         return { success: true, message: 'New verification code sent via ZeptoMail.' };
       }
-      throw new Error('Could not resend code');
+      const err = await res.json().catch(() => ({ error: 'Could not resend code' }));
+      throw new Error(err.error || 'Could not resend code');
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : String(err);
       if (errMsg.includes('Failed to fetch') || errMsg.includes('404')) {

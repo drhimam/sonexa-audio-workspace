@@ -102,13 +102,16 @@ npm run d1:migrate:remote
 ```
 
 ### 3. Configure ZeptoMail Secrets
-Set your ZeptoMail Send Mail Token in Cloudflare:
+Set your ZeptoMail Send Mail Token in Cloudflare Pages (or via the Cloudflare Dashboard under Project Settings > Environment variables):
 ```bash
-npx wrangler secret put ZEPTOMAIL_API_KEY
-# Enter: Zoho-enczapikey <YOUR_TOKEN>
+npx wrangler pages secret put ZEPTOMAIL_API_KEY --project-name sonexa
+# Enter: Zoho-enczapikey <YOUR_TOKEN> (or raw token)
 
-npx wrangler secret put ZEPTOMAIL_FROM_ADDRESS
-# Enter your verified sender: noreply@yourdomain.com
+npx wrangler pages secret put ZEPTOMAIL_FROM_ADDRESS --project-name sonexa
+# Enter your verified sender: info@yourdomain.com
+
+# Optional regional endpoint (e.g. https://api.zeptomail.ca/v1.1/email or https://api.zeptomail.eu/v1.1/email):
+npx wrangler pages secret put ZEPTOMAIL_ENDPOINT --project-name sonexa
 ```
 
 ### 4. Deploy Frontend & API to Cloudflare Pages

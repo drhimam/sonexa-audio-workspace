@@ -9,11 +9,12 @@ binding = "DB"
 database_name = "sonexa-db"
 database_id = "5dc09d8f-5fe1-45bc-b5bd-736746d16840"
 
-# Environment Variables & Secrets
+# Environment Variables & Secrets for Cloudflare Pages
 # Set secrets via CLI:
-# npx wrangler secret put ZEPTOMAIL_API_KEY
-# npx wrangler secret put ZEPTOMAIL_FROM_ADDRESS
-# npx wrangler secret put JWT_SECRET
+# npx wrangler pages secret put ZEPTOMAIL_API_KEY --project-name sonexa
+# npx wrangler pages secret put ZEPTOMAIL_FROM_ADDRESS --project-name sonexa
+# npx wrangler pages secret put ZEPTOMAIL_ENDPOINT --project-name sonexa
+# npx wrangler pages secret put JWT_SECRET --project-name sonexa
 [vars]
 ENVIRONMENT = "production"
 ZEPTOMAIL_FROM_NAME = "Sonexa Audio Workspace"

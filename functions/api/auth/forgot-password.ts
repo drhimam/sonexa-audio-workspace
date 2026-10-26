@@ -33,12 +33,23 @@ export async function onRequestPost(context: { request: Request; env: any }) {
 
         // Dispatch email via ZeptoMail
         const htmlBody = getPasswordResetEmailHtml(userName, otp);
-        await sendZeptoEmail(env, {
+        const mailResult = await sendZeptoEmail(env, {
           toEmail: normalizedEmail,
           toName: userName,
           subject: 'Reset your Sonexa password',
           htmlBody,
         });
+
+        if (!mailResult.success) {
+          console.error('[ForgotPassword] ZeptoMail dispatch failed:', mailResult.error);
+          return Response.json(
+            {
+              error: `Could not send password reset email: ${mailResult.error || 'ZeptoMail dispatch failed'}. Please check your ZeptoMail configuration.`,
+              mailError: mailResult.error,
+            },
+            { status: 400 }
+          );
+        }
       }
     }
 

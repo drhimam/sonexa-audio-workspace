@@ -13,6 +13,7 @@ export interface ZeptoMailEnv {
   ZEPTOMAIL_FROM_ADDRESS?: string;
   ZEPTOMAIL_FROM_NAME?: string;
   ZEPTOMAIL_ENDPOINT?: string;
+  ZEPTOMAIL_BOUNCE_ADDRESS?: string;
 }
 
 export async function sendZeptoEmail(
@@ -20,22 +21,40 @@ export async function sendZeptoEmail(
   options: ZeptoMailOptions
 ): Promise<{ success: boolean; data?: any; error?: string }> {
   const apiKey = env.ZEPTOMAIL_API_KEY;
-  if (!apiKey) {
-    console.warn('[ZeptoMail] ZEPTOMAIL_API_KEY is not configured in environment variables.');
+  if (!apiKey || !apiKey.trim()) {
+    const msg = 'ZEPTOMAIL_API_KEY secret is missing in Cloudflare environment.';
+    console.error(`[ZeptoMail] ${msg}`);
     return {
       success: false,
-      error: 'ZEPTOMAIL_API_KEY environment variable is missing.',
+      error: msg,
     };
   }
 
-  // Ensure Zoho-enczapikey prefix
-  const authHeader = apiKey.startsWith('Zoho-enczapikey ') ? apiKey : `Zoho-enczapikey ${apiKey}`;
-  const endpoint = env.ZEPTOMAIL_ENDPOINT || 'https://api.zeptomail.com/v1.1/email';
-  const fromAddress = env.ZEPTOMAIL_FROM_ADDRESS || 'noreply@sonexa.app';
-  const fromName = env.ZEPTOMAIL_FROM_NAME || 'Sonexa Audio Workspace';
+  // 1. Sanitize and format the Authorization header
+  // ZeptoMail Send Mail Token requires: "Zoho-enczapikey <TOKEN>"
+  let cleanKey = apiKey.trim().replace(/^["']|["']$/g, '').trim();
+  cleanKey = cleanKey.replace(/^Zoho-enczapikey[:\s]+/i, '').trim();
+  const authHeader = `Zoho-enczapikey ${cleanKey}`;
 
-  const payload = {
-    bounce_address: env.ZEPTOMAIL_FROM_ADDRESS || 'bounce@sonexa.app',
+  // 2. Normalize ZeptoMail REST API endpoint (support regional domains e.g. .com, .ca, .eu, .in)
+  let endpoint = (env.ZEPTOMAIL_ENDPOINT || 'https://api.zeptomail.com/v1.1/email').trim().replace(/^["']|["']$/g, '');
+  if (!endpoint.startsWith('http://') && !endpoint.startsWith('https://')) {
+    endpoint = `https://${endpoint}`;
+  }
+  if (!endpoint.includes('/v1.1/email')) {
+    endpoint = endpoint.replace(/\/+$/, '') + '/v1.1/email';
+  }
+
+  // 3. Sender configuration
+  const fromAddress = (env.ZEPTOMAIL_FROM_ADDRESS || 'noreply@sonexa.app').trim().replace(/^["']|["']$/g, '');
+  const fromName = (env.ZEPTOMAIL_FROM_NAME || 'Sonexa Audio Workspace').trim().replace(/^["']|["']$/g, '');
+
+  // 4. Construct payload
+  // CRITICAL: bounce_address is strictly optional in ZeptoMail Send Mail API.
+  // If bounce_address is provided with an unverified or regular sender address,
+  // ZeptoMail rejects the request with HTTP 400 (TM_3304: Invalid bounce address).
+  // Only include bounce_address if explicitly defined as a dedicated bounce subdomain.
+  const payload: Record<string, unknown> = {
     from: {
       address: fromAddress,
       name: fromName,
@@ -43,14 +62,18 @@ export async function sendZeptoEmail(
     to: [
       {
         email_address: {
-          address: options.toEmail,
-          name: options.toName || options.toEmail.split('@')[0],
+          address: options.toEmail.trim(),
+          name: (options.toName || options.toEmail.split('@')[0]).trim(),
         },
       },
     ],
     subject: options.subject,
     htmlbody: options.htmlBody,
   };
+
+  if (env.ZEPTOMAIL_BOUNCE_ADDRESS && env.ZEPTOMAIL_BOUNCE_ADDRESS.trim()) {
+    payload.bounce_address = env.ZEPTOMAIL_BOUNCE_ADDRESS.trim().replace(/^["']|["']$/g, '');
+  }
 
   try {
     const response = await fetch(endpoint, {
@@ -63,13 +86,35 @@ export async function sendZeptoEmail(
       body: JSON.stringify(payload),
     });
 
-    const data = await response.json().catch(() => ({}));
+    const rawText = await response.text();
+    let data: any = null;
+    try {
+      data = JSON.parse(rawText);
+    } catch {
+      data = null;
+    }
 
     if (!response.ok) {
-      console.error('[ZeptoMail] Send error:', response.status, data);
+      console.error('[ZeptoMail] Send error:', response.status, rawText);
+      let errorMsg = `ZeptoMail HTTP ${response.status}`;
+      if (data?.error?.message) {
+        errorMsg = `${data.error.code ? `[${data.error.code}] ` : ''}${data.error.message}`;
+        if (Array.isArray(data?.error?.details) && data.error.details.length > 0) {
+          const detailsStr = data.error.details
+            .map((d: any) => `${d.target || ''}: ${d.message || JSON.stringify(d)}`)
+            .join('; ');
+          errorMsg += ` (${detailsStr})`;
+        }
+      } else if (data?.message) {
+        errorMsg = data.message;
+      } else if (rawText) {
+        errorMsg += `: ${rawText.slice(0, 300)}`;
+      }
+
       return {
         success: false,
-        error: `ZeptoMail error (${response.status}): ${JSON.stringify(data)}`,
+        error: errorMsg,
+        data,
       };
     }
 
@@ -77,7 +122,7 @@ export async function sendZeptoEmail(
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     console.error('[ZeptoMail] Network exception:', message);
-    return { success: false, error: message };
+    return { success: false, error: `ZeptoMail network error: ${message}` };
   }
 }
 

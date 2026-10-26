@@ -293,6 +293,32 @@ Remote conferencing (Zoom, Google Meet, Microsoft Teams, Slack Huddles, Webex) i
    - Routed all "New Session" trigger points (Sidebar main button, folder inline `+`, header top-bar `+ New`, and workspace empty state) through `openNewSessionModal`.
    - Wired `handleCreateFolder` and `handleCreateSession` to persist changes instantly to Dexie IndexedDB.
 
+---
 
+## 11. ZeptoMail Transactional Email Delivery Remediation & Forced Uppercase Folder Styling
 
+### Motivation & Root Cause Analysis
+1. **ZeptoMail Delivery Failure Investigation:**
+   - **Invalid Bounce Address Rejection:** `functions/lib/zeptomail.ts` previously injected `bounce_address: env.ZEPTOMAIL_FROM_ADDRESS || 'bounce@sonexa.app'`. According to Zoho ZeptoMail API specifications, `bounce_address` is strictly an optional parameter designating a dedicated return-path subdomain configured in the Mail Agent console. Passing a standard sender address (e.g. `info@sonexa.app`) or dummy domain triggers instant HTTP 400 rejection (`TM_3304: Invalid bounce address`).
+   - **Silent Failure Masking:** When `sendZeptoEmail` encountered an error, `functions/api/auth/signup.ts` silently swallowed `mailResult.error` and responded with HTTP 200 `{ success: true, emailSent: false }`. The user received a "Verification code sent" message on the client, but no email was actually transmitted.
+   - **Deadlock on Unverified Accounts:** Because the unverified user record was committed to Cloudflare D1 before email dispatch, subsequent signup attempts by the user failed with HTTP 409: "An account with this email already exists", locking the user out.
+2. **Forced Uppercase Folder Names:**
+   - Users requested all folder names to be consistently and strictly forced to uppercase across the sidebar, session creation dialog, move modals, and data storage.
 
+### Changes Implemented
+1. **ZeptoMail Client Remediation (`functions/lib/zeptomail.ts`):**
+   - **Omitted Optional `bounce_address`:** Removed hardcoded and default sender bounce addresses. Only attaches `payload.bounce_address` if `ZEPTOMAIL_BOUNCE_ADDRESS` is explicitly configured as a dedicated bounce domain.
+   - **Token Sanitization:** Automatically cleans leading/trailing whitespace, quotes, and normalizes the required `Zoho-enczapikey <TOKEN>` header format.
+   - **Regional Endpoint Normalization:** Automatically resolves endpoints across regions (US `.com`, Canada `.ca`, Europe `.eu`, India `.in`) and ensures the `/v1.1/email` path suffix is present.
+   - **Granular Error Extraction:** Parses ZeptoMail structured error responses (`data.error.code`, `data.error.message`, `data.error.details`) to provide actionable diagnostics on failure.
+2. **Auth Endpoints Hardening (`signup.ts`, `resend.ts`, `forgot-password.ts`):**
+   - **Unverified Account Recovery:** If a user attempts to sign up with an existing email that is not yet verified (e.g. previous email failure), `signup.ts` updates the user's credentials and dispatches a fresh OTP rather than throwing a duplicate conflict.
+   - **Atomic Rollback on Mail Failure:** If `sendZeptoEmail` fails during initial registration, newly created unverified records are automatically deleted from D1.
+   - **Explicit Error Propagation:** Returns HTTP 400 with the exact ZeptoMail diagnostic error message so the user and developer can identify missing secrets or domain configuration issues immediately.
+3. **Non-Sensitive Diagnostics Endpoint (`functions/api/auth/diagnostics.ts`):**
+   - Added `GET /api/auth/diagnostics` to safely report D1 database binding status and ZeptoMail secret availability without exposing credential tokens.
+4. **Forced Uppercase Folder Names (`App.tsx`, `Sidebar.tsx`, `NewSessionModal.tsx`):**
+   - **Input Normalization:** All folder creation and rename inputs transform draft text to `.toUpperCase()` in real time with CSS `uppercase font-semibold tracking-wider`.
+   - **Storage Normalization:** Enforced `.trim().toUpperCase()` in `handleCreateFolder` and `handleRenameFolder` prior to saving to Dexie IndexedDB.
+   - **Display Transformation:** All folder titles in the sidebar cards, session creation modal, and move-to-folder dialogs render with `.toUpperCase()` and bold uppercase typography.
+   - **Data Ingestion Migration:** `refreshLocalData` automatically normalizes loaded folder entities to uppercase on startup.

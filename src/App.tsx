@@ -58,8 +58,12 @@ export default function App() {
   // Reload local IndexedDB data
   const refreshLocalData = useCallback(async () => {
     const [s, f] = await Promise.all([listSessions(), listFolders()]);
+    const normalizedFolders = f.map((folder) => ({
+      ...folder,
+      name: folder.name.toUpperCase(),
+    }));
     setSessions(s);
-    setFolders(f);
+    setFolders(normalizedFolders);
     if (s.length > 0 && !activeId) setActiveId(s[0].id);
   }, [activeId]);
 
@@ -139,16 +143,18 @@ export default function App() {
   // ---- Folder handlers --------------------------------------------------
 
   const handleCreateFolder = async (name: string): Promise<Folder> => {
+    const formattedName = name.trim().toUpperCase();
     const now = Date.now();
-    const folder: Folder = { id: uid('fld-'), name, createdAt: now, updatedAt: now };
+    const folder: Folder = { id: uid('fld-'), name: formattedName, createdAt: now, updatedAt: now };
     await saveFolder(folder);
     setFolders((prev) => [...prev, folder].sort((a, b) => a.createdAt - b.createdAt));
     return folder;
   };
 
   const handleRenameFolder = async (id: string, name: string) => {
-    await renameFolder(id, name);
-    setFolders((prev) => prev.map((f) => (f.id === id ? { ...f, name, updatedAt: Date.now() } : f)));
+    const formattedName = name.trim().toUpperCase();
+    await renameFolder(id, formattedName);
+    setFolders((prev) => prev.map((f) => (f.id === id ? { ...f, name: formattedName, updatedAt: Date.now() } : f)));
   };
 
   const handleDeleteFolder = async (id: string) => {
