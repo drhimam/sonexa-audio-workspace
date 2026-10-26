@@ -12,7 +12,7 @@ interface RecorderPanelProps {
 }
 
 export function RecorderPanel({ onSave }: RecorderPanelProps) {
-  const r = useRecorder();
+  const r = useRecorder('meeting');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const isRecording = r.state === 'recording' || r.state === 'paused';
@@ -36,6 +36,12 @@ export function RecorderPanel({ onSave }: RecorderPanelProps) {
 
   const sources: { id: AudioSourceMode; label: string; icon: typeof Mic; desc: string }[] = [
     {
+      id: 'meeting',
+      label: 'Meeting Mode',
+      icon: Users,
+      desc: 'Dual capture: records your Mic + Zoom/Teams/Meet callers mixed.',
+    },
+    {
       id: 'mic',
       label: 'Mic Only',
       icon: Mic,
@@ -47,19 +53,19 @@ export function RecorderPanel({ onSave }: RecorderPanelProps) {
       icon: Monitor,
       desc: 'Record computer audio (YouTube, video/audio playing, podcasts).',
     },
-    {
-      id: 'meeting',
-      label: 'Meeting Mode',
-      icon: Users,
-      desc: 'Dual capture: records your Mic + Zoom/Teams/Meet callers mixed.',
-    },
   ];
 
   return (
     <div className="card p-4 sm:p-5">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Mic size={16} className="text-primary" />
+          {r.audioSource === 'meeting' ? (
+            <Users size={16} className="text-primary" />
+          ) : r.audioSource === 'system' ? (
+            <Monitor size={16} className="text-primary" />
+          ) : (
+            <Mic size={16} className="text-primary" />
+          )}
           <h3 className="text-sm font-semibold">Audio Recorder</h3>
         </div>
         <div className="flex items-center gap-2">
@@ -141,7 +147,13 @@ export function RecorderPanel({ onSave }: RecorderPanelProps) {
       <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
         {r.state === 'idle' && (
           <button onClick={() => r.start()} className="btn-primary w-full sm:w-auto">
-            <Mic size={16} />
+            {r.audioSource === 'meeting' ? (
+              <Users size={16} />
+            ) : r.audioSource === 'system' ? (
+              <Monitor size={16} />
+            ) : (
+              <Mic size={16} />
+            )}
             <span>
               {r.audioSource === 'mic'
                 ? 'Start Voice Recording'

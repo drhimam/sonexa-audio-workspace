@@ -4,7 +4,7 @@ import {
   CircleCheck, CircleAlert, Globe, Mic, MessageSquare, ExternalLink, Database,
 } from 'lucide-react';
 import { Modal } from './Modal';
-import type { ProviderCapability, ProviderConfig, ProviderId, ProviderSettings } from '@/lib/types';
+import type { ProviderConfig, ProviderId, ProviderSettings } from '@/lib/types';
 import {
   PROVIDER_META, PROVIDER_LABELS,
   isProviderConfigured, resolveProviderConfig,

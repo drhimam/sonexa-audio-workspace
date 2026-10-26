@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import {
   AudioWaveform, Sparkles, Shield, Cloud, Mic, FileText,
-  MessageSquare, Zap, ArrowRight, CheckCircle2, Lock,
-  RefreshCw, Globe, ChevronRight, Play, Sun, Moon,
-  Cpu, HardDrive, Share2, Layers, Download, Monitor, Users,
+  MessageSquare, ArrowRight, CheckCircle2,
+  Play, Sun, Moon,
+  Cpu, HardDrive, Layers, Download, Monitor, Users,
 } from 'lucide-react';
 
 interface LandingPageProps {
@@ -227,7 +227,7 @@ export function LandingPage({
                 return (
                   <button
                     key={t.id}
-                    onClick={() => setActiveTab(t.id as any)}
+                    onClick={() => setActiveTab(t.id as typeof activeTab)}
                     className={`btn-ghost !px-3 !py-1.5 text-xs rounded-lg flex items-center gap-1.5 ${
                       isActive ? 'bg-primary/10 text-primary font-semibold' : 'text-muted'
                     }`}

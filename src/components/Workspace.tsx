@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Loader2, Wand2, AlertCircle, MessageSquare, FileText, Sparkles, Clock,
-  Download, Pencil, Check, X, Sparkle, Bookmark,
+  Pencil, Check, X, Sparkle, Bookmark,
   type LucideIcon,
 } from 'lucide-react';
 import type { SavedItem, Session, TranscriptData, ProviderSettings } from '@/lib/types';
@@ -183,7 +183,7 @@ export function Workspace({ session, settings, onSessionChange }: WorkspaceProps
 
   // ---- Saved items ------------------------------------------------------
 
-  const savedItems = session.savedItems ?? [];
+  const savedItems = useMemo(() => session.savedItems ?? [], [session.savedItems]);
   const savedIds = useMemo(() => new Set(savedItems.map((i) => i.id)), [savedItems]);
 
   const addSavedItem = (item: SavedItem) => {

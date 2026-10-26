@@ -65,7 +65,7 @@ export function StructuredPanel({ transcript, documents, settings, onDocuments, 
       const next = [doc, ...documents];
       onDocuments(next);
       setOpenDoc(doc.id);
-    } catch (err) {
+    } catch {
       setError('Generation failed. Check your API key in Settings.');
     } finally {
       setBusy(false);

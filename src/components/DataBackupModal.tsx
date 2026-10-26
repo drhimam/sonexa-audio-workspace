@@ -1,8 +1,7 @@
 import { useState, useRef } from 'react';
 import {
-  Download, Upload, HardDrive, FileJson, AlertCircle, CheckCircle2,
-  Loader2, RefreshCw, Layers, ShieldCheck, ArrowRight,
-  Database, Radio, FileText, Music, Sparkles,
+  Download, Upload, FileJson, AlertCircle, CheckCircle2,
+  Loader2, RefreshCw, Database, FileText, Music,
 } from 'lucide-react';
 import { Modal } from './Modal';
 import {

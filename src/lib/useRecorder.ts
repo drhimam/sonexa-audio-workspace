@@ -19,12 +19,12 @@ export interface RecorderController {
 
 const SAMPLE_COUNT = 48; // bars shown in waveform
 
-export function useRecorder(): RecorderController {
+export function useRecorder(defaultSource: AudioSourceMode = 'meeting'): RecorderController {
   const [state, setState] = useState<RecorderState>('idle');
   const [elapsedSec, setElapsedSec] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [levels, setLevels] = useState<number[]>(() => Array(SAMPLE_COUNT).fill(0));
-  const [audioSource, setAudioSource] = useState<AudioSourceMode>('mic');
+  const [audioSource, setAudioSource] = useState<AudioSourceMode>(defaultSource);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -316,7 +316,9 @@ export function useRecorder(): RecorderController {
     if (mr && mr.state !== 'inactive') {
       try {
         mr.stop();
-      } catch {}
+      } catch {
+        // ignore already inactive recorder
+      }
     }
     teardownStream();
     mediaRecorderRef.current = null;

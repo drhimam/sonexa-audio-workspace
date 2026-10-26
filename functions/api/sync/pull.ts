@@ -50,7 +50,9 @@ export async function onRequestGet(context: { request: Request; env: any }) {
         let parsedData = {};
         try {
           parsedData = JSON.parse(s.data_json);
-        } catch {}
+        } catch {
+          // ignore invalid json
+        }
         return {
           id: s.id,
           folderId: s.folder_id,

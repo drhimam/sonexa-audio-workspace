@@ -3,7 +3,7 @@ import {
   Wand2, Loader2, FileText, Sparkles, Tag, RefreshCw, AlertCircle, Check, Copy,
 } from 'lucide-react';
 import type { EnhancedTranscript, TranscriptData } from '@/lib/types';
-import { formatTimestamp, clsx } from '@/lib/utils';
+import { formatTimestamp } from '@/lib/utils';
 import { copyToClipboard } from '@/lib/export';
 
 interface EnhancedTranscriptPanelProps {
