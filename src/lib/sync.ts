@@ -34,13 +34,20 @@ export async function runBidirectionalSync(
       },
     });
 
+    const pulledSessionIds = new Set<string>();
+    const pulledFolderIds = new Set<string>();
+
     if (pullRes.ok) {
       const pullData = await pullRes.json();
       const remoteSessions: Session[] = pullData.sessions || [];
       const remoteFolders: Folder[] = pullData.folders || [];
+      if (pullData.timestamp) {
+        result.timestamp = pullData.timestamp;
+      }
 
       // Merge remote folders into local IndexedDB
       for (const rf of remoteFolders) {
+        pulledFolderIds.add(rf.id);
         const local = await getFolder(rf.id);
         if (!local || rf.updatedAt > local.updatedAt) {
           await saveFolder(rf);
@@ -50,6 +57,7 @@ export async function runBidirectionalSync(
 
       // Merge remote sessions into local IndexedDB
       for (const rs of remoteSessions) {
+        pulledSessionIds.add(rs.id);
         const local = await getSession(rs.id);
         if (!local || rs.updatedAt > local.updatedAt) {
           await saveSession(rs);
@@ -59,17 +67,21 @@ export async function runBidirectionalSync(
     }
 
     // 2. PUSH PHASE: Send local changes created/updated since lastSyncTime
+    // CRITICAL FIX: Never bounce items back to remote if they were just pulled!
     const allLocalSessions = await listSessions();
     const allLocalFolders = await listFolders();
 
-    const localSessionsToPush = lastSyncTime
-      ? allLocalSessions.filter((s) => s.updatedAt > lastSyncTime)
-      : allLocalSessions;
+    const localSessionsToPush = allLocalSessions.filter((s) => {
+      if (pulledSessionIds.has(s.id)) return false;
+      return lastSyncTime ? s.updatedAt > lastSyncTime : true;
+    });
 
-    const localFoldersToPush = lastSyncTime
-      ? allLocalFolders.filter((f) => f.updatedAt > lastSyncTime)
-      : allLocalFolders;
+    const localFoldersToPush = allLocalFolders.filter((f) => {
+      if (pulledFolderIds.has(f.id)) return false;
+      return lastSyncTime ? f.updatedAt > lastSyncTime : true;
+    });
 
+    // Zero-overhead check: Do NOT send request to /api/sync/push if nothing was modified locally
     if (localSessionsToPush.length > 0 || localFoldersToPush.length > 0) {
       const pushRes = await fetch('/api/sync/push', {
         method: 'POST',
@@ -85,8 +97,12 @@ export async function runBidirectionalSync(
       });
 
       if (pushRes.ok) {
+        const pushData = await pushRes.json();
         result.pushedSessions = localSessionsToPush.length;
         result.pushedFolders = localFoldersToPush.length;
+        if (pushData.timestamp) {
+          result.timestamp = pushData.timestamp;
+        }
       }
     }
 

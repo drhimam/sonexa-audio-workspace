@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   KeyRound, Eye, EyeOff, Loader2, Check, Info, Server, Cpu, RefreshCw,
-  CircleCheck, CircleAlert, Globe, Mic, MessageSquare, ExternalLink, Database,
+  CircleCheck, CircleAlert, Globe, Mic, MessageSquare, ExternalLink, Database, Cloud,
 } from 'lucide-react';
 import { Modal } from './Modal';
 import type { ProviderConfig, ProviderId, ProviderSettings } from '@/lib/types';
@@ -19,6 +19,7 @@ interface SettingsModalProps {
   settings: ProviderSettings;
   onUpdate: (patch: Partial<ProviderSettings>) => Promise<void>;
   onOpenBackup?: () => void;
+  onOpenCloudSync?: () => void;
 }
 
 type TabId = 'transcription' | 'chat';
@@ -32,7 +33,7 @@ function toDraft(settings: ProviderSettings): DraftConfigs {
   return draft;
 }
 
-export function SettingsModal({ open, onClose, settings, onUpdate, onOpenBackup }: SettingsModalProps) {
+export function SettingsModal({ open, onClose, settings, onUpdate, onOpenBackup, onOpenCloudSync }: SettingsModalProps) {
   const [tab, setTab] = useState<TabId>('transcription');
   const [draft, setDraft] = useState<DraftConfigs>(() => toDraft(settings));
   const [transcriptionProvider, setTranscriptionProvider] = useState(settings.transcriptionProvider);
@@ -311,6 +312,35 @@ export function SettingsModal({ open, onClose, settings, onUpdate, onOpenBackup 
               )}
             </Field>
           </div>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-app">
+          {onOpenCloudSync && (
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onOpenCloudSync();
+              }}
+              className="text-xs text-primary hover:underline flex items-center gap-1.5"
+            >
+              <Cloud size={13} />
+              <span>Multi-Cloud Sync (Google Drive, OneDrive, WebDAV)</span>
+            </button>
+          )}
+          {onOpenBackup && (
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onOpenBackup();
+              }}
+              className="text-xs text-muted hover:text-app flex items-center gap-1.5 ml-auto"
+            >
+              <Database size={13} />
+              <span>Backup Database (JSON)</span>
+            </button>
+          )}
         </div>
 
         <div className="text-[11px] text-soft text-center">

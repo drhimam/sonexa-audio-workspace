@@ -137,8 +137,8 @@ export function useAuth() {
           user,
           token,
           isLoggedIn: true,
-          syncEnabled: true,
-          syncStatus: 'synced',
+          syncEnabled: false,
+          syncStatus: 'idle',
         }));
         return { success: true, user, token };
       }
@@ -160,8 +160,8 @@ export function useAuth() {
               user: verifiedUser,
               token: fakeToken,
               isLoggedIn: true,
-              syncEnabled: true,
-              syncStatus: 'synced',
+              syncEnabled: false,
+              syncStatus: 'idle',
             }));
             sessionStorage.removeItem('sonexa_pending_user');
             return { success: true, user: verifiedUser, token: fakeToken };
@@ -210,8 +210,8 @@ export function useAuth() {
           user,
           token,
           isLoggedIn: true,
-          syncEnabled: true,
-          syncStatus: 'synced',
+          syncEnabled: false,
+          syncStatus: 'idle',
         }));
         return { success: true, user, token };
       }
@@ -309,12 +309,12 @@ export function useAuth() {
     setState((s) => ({ ...s, syncAudio: enabled }));
   }, []);
 
-  const setSyncStatus = useCallback((status: SyncStatus, error: string | null = null) => {
+  const setSyncStatus = useCallback((status: SyncStatus, error: string | null = null, syncTime?: number) => {
     setState((s) => ({
       ...s,
       syncStatus: status,
       syncError: error,
-      lastSyncTime: status === 'synced' ? Date.now() : s.lastSyncTime,
+      lastSyncTime: status === 'synced' ? (syncTime ?? Date.now()) : s.lastSyncTime,
     }));
   }, []);
 

@@ -1,29 +1,19 @@
+import { authenticateRequest } from '../../lib/crypto';
+
 export async function onRequestGet(context: { request: Request; env: any }) {
   try {
     const { request, env } = context;
-    const authHeader = request.headers.get('Authorization') || '';
-    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
 
-    if (!token) {
-      return Response.json({ error: 'Unauthorized: missing session token.' }, { status: 401 });
+    const auth = await authenticateRequest(request, env);
+    if (!auth) {
+      return Response.json({ error: 'Unauthorized: invalid or expired session.' }, { status: 401 });
     }
 
+    const userId = auth.userId;
     const url = new URL(request.url);
     const since = parseInt(url.searchParams.get('since') || '0', 10);
 
     if (env.DB) {
-      // Find session user
-      const tokenRecord = await env.DB.prepare(
-        'SELECT user_id, expires_at FROM auth_tokens WHERE token = ? AND type = "session"'
-      )
-        .bind(token)
-        .first();
-
-      if (!tokenRecord || Date.now() > tokenRecord.expires_at) {
-        return Response.json({ error: 'Unauthorized: invalid or expired session.' }, { status: 401 });
-      }
-
-      const userId = tokenRecord.user_id;
 
       // Pull folders updated after timestamp
       const foldersResult = await env.DB.prepare(

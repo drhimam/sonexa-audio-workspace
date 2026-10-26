@@ -1,4 +1,4 @@
-import { verifyPassword, generateToken } from '../../lib/crypto';
+import { verifyPassword, generateToken, createSessionToken } from '../../lib/crypto';
 
 export async function onRequestPost(context: { request: Request; env: any }) {
   try {
@@ -35,14 +35,15 @@ export async function onRequestPost(context: { request: Request; env: any }) {
         }, { status: 403 });
       }
 
-      // Generate session token
-      const sessionToken = `sess_${generateToken(24)}`;
+      // Generate stateless signed session token (0 D1 reads on sync)
+      const sessionToken = await createSessionToken(user.id, env.JWT_SECRET);
       const sessionExpiry = Date.now() + 30 * 24 * 60 * 60 * 1000; // 30 days
       await env.DB.prepare(
         'INSERT INTO auth_tokens (id, user_id, token, type, expires_at, created_at) VALUES (?, ?, ?, "session", ?, ?)'
       )
         .bind(`tok_${generateToken(12)}`, user.id, sessionToken, sessionExpiry, Date.now())
-        .run();
+        .run()
+        .catch(() => {});
 
       return Response.json({
         success: true,

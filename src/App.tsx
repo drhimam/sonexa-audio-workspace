@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import {
   Settings, Sun, Moon, AudioWaveform, Plus, Cloud,
   RefreshCw, User as UserIcon, LogOut, Check, ArrowLeft, Database,
@@ -21,6 +21,8 @@ import {
   listFolders, saveFolder, renameFolder, deleteFolder,
 } from '@/lib/db';
 import type { Folder, Session } from '@/lib/types';
+import { useCloudSync } from '@/lib/useCloudSync';
+import { CloudSyncModal } from '@/components/CloudSyncModal';
 import { uid } from '@/lib/utils';
 
 
@@ -29,7 +31,10 @@ export default function App() {
   const { theme, toggle } = useTheme();
   const { settings, ready, update } = useProviderSettings();
   const auth = useAuth();
+  const cloudSync = useCloudSync();
   const pwa = usePwaInstall();
+
+  const syncDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const [view, setView] = useState<'landing' | 'workspace'>(() => {
     return (localStorage.getItem('sonexa_view') as 'landing' | 'workspace') || 'landing';
@@ -39,6 +44,7 @@ export default function App() {
   const [folders, setFolders] = useState<Folder[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [cloudSyncModalOpen, setCloudSyncModalOpen] = useState(false);
   const [authModal, setAuthModal] = useState<{ open: boolean; mode: AuthMode }>({
     open: false,
     mode: 'signin',
@@ -48,6 +54,15 @@ export default function App() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [newSessionModalOpen, setNewSessionModalOpen] = useState(false);
   const [newSessionFolderId, setNewSessionFolderId] = useState<string | null>(null);
+
+  // Sync Cloudflare auth state with multi-cloud provider
+  useEffect(() => {
+    if (auth.token) {
+      cloudSync.setCloudflareAuth(auth.token, auth.user?.email);
+    } else {
+      cloudSync.setCloudflareAuth(null);
+    }
+  }, [auth.token, auth.user?.email, cloudSync.setCloudflareAuth]);
 
   // Sync view preference
   const handleSetView = (v: 'landing' | 'workspace') => {
@@ -71,26 +86,57 @@ export default function App() {
     refreshLocalData();
   }, [refreshLocalData]);
 
-  // Cloud Sync Handler
+  // Unified Multi-Cloud Sync Handler
   const handleTriggerSync = useCallback(async () => {
-    if (!auth.token || !auth.syncEnabled) return;
-    auth.setSyncStatus('syncing');
-    const res = await runBidirectionalSync(auth.token, auth.lastSyncTime, { syncAudio: auth.syncAudio });
-    if (res.success) {
-      auth.setSyncStatus('synced');
-      await refreshLocalData();
-    } else {
-      auth.setSyncStatus('error', res.error);
-    }
-  }, [auth, refreshLocalData]);
+    if (cloudSync.settings.activeProvider === 'none') return;
 
-  // Periodic automatic sync every 60 seconds if authenticated and enabled
+    try {
+      const res = await cloudSync.syncNow();
+      if (res.success) {
+        if (res.pulledSessions > 0 || res.pulledFolders > 0) {
+          await refreshLocalData();
+        }
+      }
+    } catch (err: unknown) {
+      console.error('Multi-cloud sync error:', err);
+    }
+  }, [cloudSync, refreshLocalData]);
+
+  // Debounced cloud sync when local modifications occur (cooldown of 4 seconds)
+  const scheduleDebouncedSync = useCallback((delayMs = 4000) => {
+    if (cloudSync.settings.activeProvider === 'none') return;
+    if (syncDebounceTimerRef.current) clearTimeout(syncDebounceTimerRef.current);
+    syncDebounceTimerRef.current = setTimeout(() => {
+      handleTriggerSync();
+    }, delayMs);
+  }, [cloudSync.settings.activeProvider, handleTriggerSync]);
+
+  // Periodic automatic sync: 5-minute background heartbeat + tab visibility trigger
   useEffect(() => {
-    if (!auth.isLoggedIn || !auth.syncEnabled || !auth.token) return;
+    if (cloudSync.settings.activeProvider === 'none' || !cloudSync.settings.autoSync) return;
+
+    // Run initial sync once upon login / provider select
     handleTriggerSync();
-    const interval = setInterval(handleTriggerSync, 60000);
-    return () => clearInterval(interval);
-  }, [auth.isLoggedIn, auth.syncEnabled, auth.token, handleTriggerSync]);
+
+    // Heartbeat every 5 minutes (300,000ms)
+    const interval = setInterval(() => {
+      handleTriggerSync();
+    }, cloudSync.settings.syncIntervalMs || 300000);
+
+    // Sync when tab regains focus
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        handleTriggerSync();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      if (syncDebounceTimerRef.current) clearTimeout(syncDebounceTimerRef.current);
+    };
+  }, [cloudSync.settings.activeProvider, cloudSync.settings.autoSync, cloudSync.settings.syncIntervalMs, handleTriggerSync]);
 
   const active = activeId ? sessions.find((s) => s.id === activeId) ?? null : null;
 
@@ -116,6 +162,7 @@ export default function App() {
     setSessions((prev) => [s, ...prev]);
     setActiveId(s.id);
     setMobileMenuOpen(false);
+    scheduleDebouncedSync(2000);
   };
 
   const handleSelect = async (id: string) => {
@@ -131,6 +178,7 @@ export default function App() {
       setActiveId((curr) => (curr === id ? next[0]?.id ?? null : curr));
       return next;
     });
+    scheduleDebouncedSync(2000);
   };
 
   const handleSessionChange = (updated: Session) => {
@@ -138,6 +186,7 @@ export default function App() {
       const next = prev.map((s) => (s.id === updated.id ? updated : s));
       return [...next].sort((a, b) => b.updatedAt - a.updatedAt);
     });
+    scheduleDebouncedSync(4000);
   };
 
   // ---- Folder handlers --------------------------------------------------
@@ -148,6 +197,7 @@ export default function App() {
     const folder: Folder = { id: uid('fld-'), name: formattedName, createdAt: now, updatedAt: now };
     await saveFolder(folder);
     setFolders((prev) => [...prev, folder].sort((a, b) => a.createdAt - b.createdAt));
+    scheduleDebouncedSync(2000);
     return folder;
   };
 
@@ -155,17 +205,20 @@ export default function App() {
     const formattedName = name.trim().toUpperCase();
     await renameFolder(id, formattedName);
     setFolders((prev) => prev.map((f) => (f.id === id ? { ...f, name: formattedName, updatedAt: Date.now() } : f)));
+    scheduleDebouncedSync(2000);
   };
 
   const handleDeleteFolder = async (id: string) => {
     await deleteFolder(id);
     setFolders((prev) => prev.filter((f) => f.id !== id));
     setSessions((prev) => prev.map((s) => (s.folderId === id ? { ...s, folderId: null } : s)));
+    scheduleDebouncedSync(2000);
   };
 
   const handleMoveSession = async (sessionId: string, folderId: string | null) => {
     await updateSession(sessionId, { folderId });
     setSessions((prev) => prev.map((s) => (s.id === sessionId ? { ...s, folderId, updatedAt: Date.now() } : s)));
+    scheduleDebouncedSync(2000);
   };
 
   // Render Landing Page View
@@ -175,6 +228,7 @@ export default function App() {
         <LandingPage
           onLaunchWorkspace={() => handleSetView('workspace')}
           onOpenAuth={(mode = 'signin') => setAuthModal({ open: true, mode })}
+          onOpenCloudSync={() => setCloudSyncModalOpen(true)}
           theme={theme}
           onToggleTheme={toggle}
           isLoggedIn={auth.isLoggedIn}
@@ -187,7 +241,16 @@ export default function App() {
           initialMode={authModal.mode}
           onClose={() => setAuthModal({ open: false, mode: 'signin' })}
           auth={auth}
-          onSuccess={() => handleSetView('workspace')}
+          onSuccess={() => {
+            setCloudSyncModalOpen(true);
+            handleSetView('workspace');
+          }}
+        />
+        <CloudSyncModal
+          open={cloudSyncModalOpen}
+          onClose={() => setCloudSyncModalOpen(false)}
+          cloudSync={cloudSync}
+          onOpenAuth={() => setAuthModal({ open: true, mode: 'signin' })}
         />
       </>
     );
@@ -255,40 +318,46 @@ export default function App() {
               </button>
             )}
 
-            {/* Cloud Sync Status Badge */}
-            {auth.isLoggedIn ? (
-              <div className="flex items-center gap-1 mr-1">
+            {/* Multi-Cloud Sync Status Badge & Modal Trigger */}
+            <div className="flex items-center gap-1 mr-1">
+              <button
+                onClick={() => setCloudSyncModalOpen(true)}
+                className={`btn-ghost !py-1 !px-2.5 text-xs rounded-full flex items-center gap-1.5 border border-app transition-all ${
+                  cloudSync.status === 'syncing'
+                    ? 'text-amber-500 bg-amber-500/10 border-amber-500/30'
+                    : cloudSync.status === 'synced'
+                    ? 'text-primary bg-primary/10 border-primary/30'
+                    : cloudSync.status === 'error'
+                    ? 'text-rose-500 bg-rose-500/10 border-rose-500/30'
+                    : 'text-muted hover:text-app hover:border-primary/40'
+                }`}
+                title="Select Cloud Provider (Google Drive, OneDrive, WebDAV, Sonexa Cloud)"
+              >
+                {cloudSync.status === 'syncing' ? (
+                  <RefreshCw size={12} className="animate-spin text-amber-500" />
+                ) : (
+                  <Cloud size={12} className={cloudSync.status === 'synced' ? 'text-primary' : 'text-muted'} />
+                )}
+                <span className="text-[11px] font-medium hidden sm:inline">
+                  {cloudSync.status === 'syncing'
+                    ? 'Syncing…'
+                    : cloudSync.settings.activeProvider !== 'none'
+                    ? cloudSync.activeMeta.badgeLabel
+                    : 'Connect Cloud'}
+                </span>
+              </button>
+
+              {cloudSync.settings.activeProvider !== 'none' && (
                 <button
                   onClick={handleTriggerSync}
-                  className={`btn-ghost !py-1 !px-2.5 text-xs rounded-full flex items-center gap-1.5 border border-app ${
-                    auth.syncStatus === 'syncing'
-                      ? 'text-amber-500 bg-amber-500/10'
-                      : auth.syncStatus === 'synced'
-                      ? 'text-primary bg-primary/10'
-                      : 'text-muted'
-                  }`}
-                  title="Click to sync with Cloudflare D1"
+                  disabled={cloudSync.status === 'syncing'}
+                  className="btn-ghost !p-1.5 rounded-full text-muted hover:text-primary transition"
+                  title={`Sync with ${cloudSync.activeMeta.name} now`}
                 >
-                  {auth.syncStatus === 'syncing' ? (
-                    <RefreshCw size={12} className="animate-spin text-amber-500" />
-                  ) : (
-                    <Cloud size={12} className="text-primary" />
-                  )}
-                  <span className="text-[11px] font-medium hidden md:inline">
-                    {auth.syncStatus === 'syncing' ? 'Syncing...' : 'Cloud Synced'}
-                  </span>
+                  <RefreshCw size={12} className={cloudSync.status === 'syncing' ? 'animate-spin' : ''} />
                 </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setAuthModal({ open: true, mode: 'signin' })}
-                className="btn-ghost !py-1 !px-2 text-xs rounded-lg text-primary hover:bg-primary/10 flex items-center gap-1 mr-0.5 sm:mr-1"
-                title="Enable Cloudflare Multi-Device Sync"
-              >
-                <Cloud size={13} />
-                <span className="text-[11px] font-medium hidden sm:inline">Connect Cloud</span>
-              </button>
-            )}
+              )}
+            </div>
 
             <button onClick={() => openNewSessionModal(null)} className="btn-ghost !py-1.5 !px-2 text-xs">
               <Plus size={14} /> <span className="hidden sm:inline">New</span>
@@ -318,7 +387,7 @@ export default function App() {
                 </button>
 
                 {userMenuOpen && (
-                  <div className="absolute right-0 top-9 z-50 surface border border-app rounded-xl shadow-soft-dark py-2 w-56 animate-slide-up text-xs">
+                  <div className="absolute right-0 top-9 z-50 surface border border-app rounded-xl shadow-soft-dark py-2 w-60 animate-slide-up text-xs">
                     <div className="px-3 py-1.5 border-b border-app">
                       <p className="font-semibold text-[var(--text)] truncate">{auth.user?.name || 'Account'}</p>
                       <p className="text-[11px] text-muted truncate">{auth.user?.email}</p>
@@ -329,14 +398,25 @@ export default function App() {
 
                     <div className="px-3 py-2 border-b border-app space-y-1">
                       <div className="flex items-center justify-between text-muted">
-                        <span>Cloudflare Sync:</span>
-                        <span className="text-primary font-medium">{auth.syncEnabled ? 'Active' : 'Off'}</span>
+                        <span>Active Cloud:</span>
+                        <span className="text-primary font-medium">{cloudSync.activeMeta.shortName}</span>
                       </div>
                       <div className="flex items-center justify-between text-muted">
-                        <span>Audio Sync:</span>
-                        <span className="text-soft">{auth.syncAudio ? 'Enabled' : 'Text Only'}</span>
+                        <span>Sync Status:</span>
+                        <span className="text-soft capitalize">{cloudSync.status}</span>
                       </div>
                     </div>
+
+                    <button
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        setCloudSyncModalOpen(true);
+                      }}
+                      className="w-full text-left px-3 py-1.5 hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2 transition"
+                    >
+                      <Cloud size={13} className="text-primary" />
+                      <span>Cloud Storage Providers</span>
+                    </button>
 
                     <button
                       onClick={() => {
@@ -384,14 +464,23 @@ export default function App() {
           settings={settings}
           onUpdate={update}
           onOpenBackup={() => setBackupOpen(true)}
+          onOpenCloudSync={() => setCloudSyncModalOpen(true)}
         />
       )}
+
+      <CloudSyncModal
+        open={cloudSyncModalOpen}
+        onClose={() => setCloudSyncModalOpen(false)}
+        cloudSync={cloudSync}
+        onOpenAuth={() => setAuthModal({ open: true, mode: 'signin' })}
+      />
 
       <AuthModal
         open={authModal.open}
         initialMode={authModal.mode}
         onClose={() => setAuthModal({ open: false, mode: 'signin' })}
         auth={auth}
+        onSuccess={() => setCloudSyncModalOpen(true)}
       />
 
       <DataBackupModal

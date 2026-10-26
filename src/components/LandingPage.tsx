@@ -9,6 +9,7 @@ import {
 interface LandingPageProps {
   onLaunchWorkspace: () => void;
   onOpenAuth: (mode?: 'signin' | 'signup') => void;
+  onOpenCloudSync?: () => void;
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
   isLoggedIn: boolean;
@@ -20,6 +21,7 @@ interface LandingPageProps {
 export function LandingPage({
   onLaunchWorkspace,
   onOpenAuth,
+  onOpenCloudSync,
   theme,
   onToggleTheme,
   isLoggedIn,
@@ -149,15 +151,14 @@ export function LandingPage({
               </button>
             )}
 
-            {!isLoggedIn && (
-              <button
-                onClick={() => onOpenAuth('signup')}
-                className="btn-outline !py-3.5 !px-6 text-sm font-semibold rounded-xl w-full sm:w-auto flex items-center justify-center gap-2"
-              >
-                <Cloud size={17} className="text-primary" />
-                <span>Sign Up for Cloudflare Sync</span>
-              </button>
-            )}
+            <button
+              onClick={onOpenCloudSync || onLaunchWorkspace}
+              className="btn-outline !py-3.5 !px-6 text-sm font-semibold rounded-xl w-full sm:w-auto flex items-center justify-center gap-2"
+              title="Connect Google Drive, OneDrive, or WebDAV"
+            >
+              <Cloud size={17} className="text-primary" />
+              <span>Multi-Cloud Sync (Drive, OneDrive, WebDAV)</span>
+            </button>
           </div>
 
           <div className="mt-5 flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-xs text-soft">
@@ -437,34 +438,35 @@ export function LandingPage({
               </div>
               <div>
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-xs font-semibold text-primary mb-4">
-                  <Cloud size={13} /> Cloudflare Edge Sync
+                  <Cloud size={13} /> Multi-Provider Cloud Sync
                 </div>
-                <h3 className="text-xl font-bold">Cross-Device Synchronized</h3>
-                <p className="text-xs text-muted mt-2">Access your transcripts and sessions from any computer or browser.</p>
+                <h3 className="text-xl font-bold">Your Cloud, Your Rules</h3>
+                <p className="text-xs text-muted mt-2">Bring your own Google Drive, OneDrive, Nextcloud/WebDAV, or use Sonexa Cloud.</p>
                 <div className="mt-6 space-y-3 text-sm">
                   <div className="flex items-center gap-2">
                     <CheckCircle2 size={16} className="text-primary shrink-0" />
-                    <span>Verified account via ZeptoMail</span>
+                    <span>Google Drive (15 GB free AppData storage)</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle2 size={16} className="text-primary shrink-0" />
-                    <span>Cloudflare D1 serverless database sync</span>
+                    <span>Microsoft OneDrive (AppFolder integration)</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle2 size={16} className="text-primary shrink-0" />
-                    <span>Automatic conflict resolution (LWW)</span>
+                    <span>Nextcloud & WebDAV (Self-hosted & private)</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle2 size={16} className="text-primary shrink-0" />
-                    <span>Cloudflare R2 cloud audio backups</span>
+                    <span>Built-in Sonexa Cloud (Cloudflare edge database)</span>
                   </div>
                 </div>
               </div>
               <button
-                onClick={() => onOpenAuth('signup')}
-                className="btn-primary w-full mt-8 !py-2.5 text-xs font-semibold shadow-soft"
+                onClick={onOpenCloudSync || onLaunchWorkspace}
+                className="btn-primary w-full mt-8 !py-2.5 text-xs font-semibold shadow-soft flex items-center justify-center gap-2"
               >
-                Create Account & Enable Sync
+                <Cloud size={14} />
+                <span>Connect Cloud Storage Provider</span>
               </button>
             </div>
           </div>
@@ -485,14 +487,13 @@ export function LandingPage({
             >
               Start Recording for Free
             </button>
-            {!isLoggedIn && (
-              <button
-                onClick={() => onOpenAuth('signin')}
-                className="btn-ghost !py-3 !px-5 text-sm font-semibold"
-              >
-                Sign In to Cloud Account
-              </button>
-            )}
+            <button
+              onClick={onOpenCloudSync || onLaunchWorkspace}
+              className="btn-ghost !py-3 !px-5 text-sm font-semibold flex items-center gap-1.5"
+            >
+              <Cloud size={16} className="text-primary" />
+              <span>Choose Cloud Storage Provider</span>
+            </button>
           </div>
         </div>
       </section>
