@@ -109,3 +109,23 @@
 - Authored root `README.md`: High-impact GitHub documentation with badges, architecture diagrams, local development setup, and Cloudflare deployment instructions.
 - Authored `.env.example`: Clear environment variables template for ZeptoMail and Cloudflare.
 - Added npm deployment and migration scripts in `package.json` (`d1:migrate:local`, `d1:migrate:remote`, `pages:dev`, `deploy`).
+
+---
+
+## 4. Live Production Terminal Deployment (Cloudflare Pages & D1)
+
+### Execution Summary
+- **Database Provisioning:** Successfully created Cloudflare D1 serverless database:
+  - Database Name: `sonexa-db`
+  - Region: `ENAM`
+  - Database ID: `5dc09d8f-5fe1-45bc-b5bd-736746d16840`
+  - Bound in `wrangler.toml` under binding `DB`.
+- **Database Migration:** Applied `migrations/0001_initial_schema.sql` directly to the remote production D1 instance:
+  - Tables created: `users`, `auth_tokens`, `folders`, `sessions`.
+  - Indexes created: `idx_users_email`, `idx_tokens_lookup`, `idx_sessions_sync`, `idx_folders_sync`.
+- **Pages Project Creation:** Created project `sonexa` on Cloudflare Pages attached to production branch `main`.
+- **Production Asset & Functions Build:** Compiled React/Vite client and edge functions bundle.
+- **Production Deployment:** Deployed via `wrangler pages deploy dist --project-name sonexa --branch main`:
+  - Production URL: **[https://sonexa.pages.dev](https://sonexa.pages.dev)**
+  - Direct Deployment URL: **https://9adffccf.sonexa.pages.dev**
+- **Verification:** Verified live HTTP response and asset delivery via edge CDN.

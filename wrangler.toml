@@ -7,7 +7,7 @@ compatibility_flags = ["nodejs_compat"]
 [[d1_databases]]
 binding = "DB"
 database_name = "sonexa-db"
-database_id = "placeholder-d1-database-id"
+database_id = "5dc09d8f-5fe1-45bc-b5bd-736746d16840"
 
 # Environment Variables & Secrets
 # Set secrets via CLI:
