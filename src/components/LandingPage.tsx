@@ -3,7 +3,7 @@ import {
   AudioWaveform, Sparkles, Shield, Cloud, Mic, FileText,
   MessageSquare, Zap, ArrowRight, CheckCircle2, Lock,
   RefreshCw, Globe, ChevronRight, Play, Sun, Moon,
-  Cpu, HardDrive, Share2, Layers,
+  Cpu, HardDrive, Share2, Layers, Download, Monitor, Users,
 } from 'lucide-react';
 
 interface LandingPageProps {
@@ -13,6 +13,8 @@ interface LandingPageProps {
   onToggleTheme: () => void;
   isLoggedIn: boolean;
   userName?: string;
+  canInstallApp?: boolean;
+  onInstallApp?: () => void;
 }
 
 export function LandingPage({
@@ -22,6 +24,8 @@ export function LandingPage({
   onToggleTheme,
   isLoggedIn,
   userName,
+  canInstallApp,
+  onInstallApp,
 }: LandingPageProps) {
   const [activeTab, setActiveTab] = useState<'transcribe' | 'enhance' | 'chat' | 'docs'>('transcribe');
 
@@ -47,7 +51,25 @@ export function LandingPage({
             <a href="#security" className="hover:text-[var(--text)] transition">Security & Privacy</a>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2 sm:gap-2.5">
+            <button
+              onClick={onToggleTheme}
+              className="btn-ghost !p-2 rounded-lg"
+              aria-label="Toggle theme"
+            >
+              {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
+            </button>
+
+            {canInstallApp && (
+              <button
+                onClick={onInstallApp}
+                className="btn-outline text-xs !py-1.5 !px-3 font-medium hidden sm:flex items-center gap-1.5"
+                title="Install Desktop Application"
+              >
+                <Download size={13} className="text-primary" />
+                <span>Install App</span>
+              </button>
+            )}
             <button
               onClick={onToggleTheme}
               className="btn-ghost !p-2 rounded-lg"
@@ -104,7 +126,7 @@ export function LandingPage({
           </h1>
 
           <p className="mt-6 text-lg sm:text-xl text-muted max-w-3xl mx-auto leading-relaxed">
-            Record, upload, and transcribe meetings or interviews with <strong>OpenAI Whisper, Deepgram, Groq, or local Ollama</strong>. 100% private in your browser, with optional <strong>Cloudflare multi-device sync</strong>.
+            Record, upload, and transcribe with <strong>OpenAI Whisper, Deepgram, Groq, or local Ollama</strong>. Capture <strong>Microphone</strong>, <strong>System Audio</strong> (YouTube/videos), and <strong>Zoom/Teams Meeting Calls</strong> directly from your browser or install as a native desktop app.
           </p>
 
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3.5">
@@ -117,6 +139,16 @@ export function LandingPage({
               <ArrowRight size={16} />
             </button>
 
+            {canInstallApp && (
+              <button
+                onClick={onInstallApp}
+                className="btn-outline !py-3.5 !px-6 text-sm font-semibold rounded-xl w-full sm:w-auto flex items-center justify-center gap-2"
+              >
+                <Download size={17} className="text-primary" />
+                <span>Install Desktop App</span>
+              </button>
+            )}
+
             {!isLoggedIn && (
               <button
                 onClick={() => onOpenAuth('signup')}
@@ -128,15 +160,18 @@ export function LandingPage({
             )}
           </div>
 
-          <div className="mt-5 flex items-center justify-center gap-6 text-xs text-soft">
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-xs text-soft">
             <span className="flex items-center gap-1.5">
-              <CheckCircle2 size={13} className="text-primary" /> No credit card
+              <Users size={13} className="text-primary" /> Zoom & Teams Meeting Audio
             </span>
             <span className="flex items-center gap-1.5">
-              <CheckCircle2 size={13} className="text-primary" /> 100% Offline capability
+              <Monitor size={13} className="text-primary" /> System Audio & Tab Capture
             </span>
             <span className="flex items-center gap-1.5">
-              <CheckCircle2 size={13} className="text-primary" /> Verified via ZeptoMail
+              <Download size={13} className="text-primary" /> Desktop & Mobile PWA
+            </span>
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 size={13} className="text-primary" /> 100% Offline IndexedDB
             </span>
           </div>
 

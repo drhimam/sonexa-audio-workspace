@@ -3,7 +3,7 @@ import {
   Plus, Mic, FileText, MessageSquare, Sparkles, Trash2, Search,
   MoreHorizontal, AudioWaveform, Circle, Loader2, CheckCircle2, AlertCircle,
   Folder as FolderIcon, FolderPlus, ChevronRight, ChevronDown, FolderInput,
-  Pencil, Database, type LucideIcon,
+  Pencil, Database, X, Download, type LucideIcon,
 } from 'lucide-react';
 import type { Folder, Session, SessionStatus } from '@/lib/types';
 import { clsx, formatDate } from '@/lib/utils';
@@ -21,6 +21,10 @@ interface SidebarProps {
   onDeleteFolder: (id: string) => Promise<void>;
   onMoveSession: (sessionId: string, folderId: string | null) => Promise<void>;
   onOpenBackup?: () => void;
+  mobileOpen?: boolean;
+  onCloseMobile?: () => void;
+  onInstallApp?: () => void;
+  canInstallApp?: boolean;
 }
 
 const STATUS_META: Record<SessionStatus, { label: string; icon: LucideIcon; color: string }> = {
@@ -38,7 +42,7 @@ const NO_FOLDER = '__unfiled__';
 export function Sidebar({
   sessions, folders, activeId, onSelect, onNew, onDelete,
   onCreateFolder, onRenameFolder, onDeleteFolder, onMoveSession,
-  onOpenBackup,
+  onOpenBackup, mobileOpen, onCloseMobile, onInstallApp, canInstallApp,
 }: SidebarProps) {
   const [query, setQuery] = useState('');
   const [menuId, setMenuId] = useState<string | null>(null);
@@ -88,7 +92,10 @@ export function Sidebar({
     return (
       <div
         key={s.id}
-        onClick={() => onSelect(s.id)}
+        onClick={() => {
+          onSelect(s.id);
+          onCloseMobile?.();
+        }}
         className={clsx(
           'group relative rounded-lg px-3 py-2.5 mb-1 cursor-pointer transition-colors',
           isActive ? 'bg-primary/10' : 'hover:bg-black/[0.03] dark:hover:bg-white/[0.04]',
@@ -168,12 +175,12 @@ export function Sidebar({
     );
   };
 
-  return (
-    <>
-      <aside className="w-72 shrink-0 h-full flex flex-col border-r border-app surface">
-        <div className="px-4 py-4 border-b border-app">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white">
+  const sidebarContent = (
+    <aside className="w-72 max-w-[85vw] shrink-0 h-full flex flex-col border-r border-app surface shadow-xl md:shadow-none">
+      <div className="px-4 py-4 border-b border-app">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white shadow-soft">
               <AudioWaveform size={18} />
             </div>
             <div className="leading-tight">
@@ -181,75 +188,129 @@ export function Sidebar({
               <div className="text-[10px] text-soft">Audio Workspace</div>
             </div>
           </div>
-          <div className="flex gap-2">
-            <button onClick={() => onNew(null)} className="btn-primary flex-1">
-              <Plus size={16} /> New session
-            </button>
-            <button onClick={openCreateFolder} className="btn-outline !px-2.5" aria-label="New folder" title="New folder">
-              <FolderPlus size={15} />
-            </button>
-          </div>
-        </div>
-
-        <div className="px-3 py-2.5 border-b border-app">
-          <div className="relative">
-            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-soft" />
-            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search sessions…" className="input !pl-8 !py-2 text-sm" />
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto scroll-thin px-2 py-2">
-          {sessions.length === 0 ? (
-            <div className="text-center py-10 px-4">
-              <Mic size={22} className="text-soft mx-auto mb-2" />
-              <p className="text-xs text-muted">No sessions yet.</p>
-              <p className="text-[11px] text-soft mt-1">Start a new session, record or upload audio.</p>
-            </div>
-          ) : (
-            <>
-              {unfiled.length > 0 && (
-                <>
-                  {renderFolderHeader('Unfiled', unfiled.length, NO_FOLDER)}
-                  {!collapsed[NO_FOLDER] && unfiled.map(renderSession)}
-                </>
-              )}
-              {folderOrder.map((f) => {
-                const items = grouped.get(f.id) ?? [];
-                return (
-                  <div key={f.id}>
-                    {renderFolderHeader(f.name, items.length, f.id, (
-                      <>
-                        <button onClick={(e) => { e.stopPropagation(); openRenameFolder(f); }} className="btn-ghost !p-1 !rounded-md" aria-label="Rename folder"><Pencil size={11} /></button>
-                        <button onClick={(e) => { e.stopPropagation(); onDeleteFolder(f.id); }} className="btn-ghost !p-1 !rounded-md text-red-500 hover:bg-red-500/10" aria-label="Delete folder"><Trash2 size={11} /></button>
-                      </>
-                    ))}
-                    {!collapsed[f.id] && items.map(renderSession)}
-                  </div>
-                );
-              })}
-              {folderOrder.length === 0 && unfiled.length === 0 && (
-                <p className="text-center text-[11px] text-soft py-6">No matches.</p>
-              )}
-            </>
-          )}
-        </div>
-        <div className="px-3 py-2 border-t border-app flex items-center justify-between text-[11px] text-soft">
-          <span className="flex items-center gap-1.5 text-muted">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            <span>IndexedDB</span>
-          </span>
-          {onOpenBackup && (
+          {onCloseMobile && (
             <button
-              onClick={onOpenBackup}
-              className="btn-ghost !py-1 !px-2 text-[11px] text-primary hover:bg-primary/10 rounded flex items-center gap-1"
-              title="Export or Import database JSON file"
+              onClick={onCloseMobile}
+              className="md:hidden btn-ghost !p-1.5 rounded-lg text-muted hover:text-[var(--text)]"
+              aria-label="Close sidebar"
             >
-              <Database size={12} />
-              <span>Backup / Transfer</span>
+              <X size={17} />
             </button>
           )}
         </div>
-      </aside>
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              onNew(null);
+              onCloseMobile?.();
+            }}
+            className="btn-primary flex-1"
+          >
+            <Plus size={16} /> New session
+          </button>
+          <button onClick={openCreateFolder} className="btn-outline !px-2.5" aria-label="New folder" title="New folder">
+            <FolderPlus size={15} />
+          </button>
+        </div>
+      </div>
+
+      {canInstallApp && (
+        <div className="px-3 py-2 border-b border-app bg-primary/5">
+          <button
+            onClick={onInstallApp}
+            className="btn-primary w-full !py-1.5 text-xs flex items-center justify-center gap-1.5 shadow-sm"
+          >
+            <Download size={13} />
+            <span>Install Desktop App</span>
+          </button>
+        </div>
+      )}
+
+      <div className="px-3 py-2.5 border-b border-app">
+        <div className="relative">
+          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-soft" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search sessions…"
+            className="input !pl-8 !py-2 text-sm"
+          />
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto scroll-thin px-2 py-2">
+        {sessions.length === 0 ? (
+          <div className="text-center py-10 px-4">
+            <Mic size={22} className="text-soft mx-auto mb-2" />
+            <p className="text-xs text-muted">No sessions yet.</p>
+            <p className="text-[11px] text-soft mt-1">Start a new session, record or upload audio.</p>
+          </div>
+        ) : (
+          <>
+            {unfiled.length > 0 && (
+              <>
+                {renderFolderHeader('Unfiled', unfiled.length, NO_FOLDER)}
+                {!collapsed[NO_FOLDER] && unfiled.map(renderSession)}
+              </>
+            )}
+            {folderOrder.map((f) => {
+              const items = grouped.get(f.id) ?? [];
+              return (
+                <div key={f.id}>
+                  {renderFolderHeader(f.name, items.length, f.id, (
+                    <>
+                      <button onClick={(e) => { e.stopPropagation(); openRenameFolder(f); }} className="btn-ghost !p-1 !rounded-md" aria-label="Rename folder"><Pencil size={11} /></button>
+                      <button onClick={(e) => { e.stopPropagation(); onDeleteFolder(f.id); }} className="btn-ghost !p-1 !rounded-md text-red-500 hover:bg-red-500/10" aria-label="Delete folder"><Trash2 size={11} /></button>
+                    </>
+                  ))}
+                  {!collapsed[f.id] && items.map(renderSession)}
+                </div>
+              );
+            })}
+            {folderOrder.length === 0 && unfiled.length === 0 && (
+              <p className="text-center text-[11px] text-soft py-6">No matches.</p>
+            )}
+          </>
+        )}
+      </div>
+      <div className="px-3 py-2 border-t border-app flex items-center justify-between text-[11px] text-soft">
+        <span className="flex items-center gap-1.5 text-muted">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+          <span>IndexedDB</span>
+        </span>
+        {onOpenBackup && (
+          <button
+            onClick={onOpenBackup}
+            className="btn-ghost !py-1 !px-2 text-[11px] text-primary hover:bg-primary/10 rounded flex items-center gap-1"
+            title="Export or Import database JSON file"
+          >
+            <Database size={12} />
+            <span>Backup / Transfer</span>
+          </button>
+        )}
+      </div>
+    </aside>
+  );
+
+  return (
+    <>
+      {/* Mobile Drawer (visible only on mobile screens when mobileOpen is true) */}
+      {mobileOpen && (
+        <div className="md:hidden fixed inset-0 z-50 flex">
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity animate-fade-in"
+            onClick={onCloseMobile}
+          />
+          <div className="relative z-10 animate-slide-up h-full">
+            {sidebarContent}
+          </div>
+        </div>
+      )}
+
+      {/* Desktop Persistent Sidebar (hidden on mobile, visible on md and up) */}
+      <div className="hidden md:flex h-full shrink-0">
+        {sidebarContent}
+      </div>
 
       {/* Folder create / rename modal */}
       <Modal

@@ -14,13 +14,16 @@
 
 ## 🌟 Key Features
 
-- **🎙️ Zero-Friction Local Workspace:** Launch and transcribe instantly without creating an account. Recordings and transcripts stay in your browser.
+- **🎙️ Multi-Source Audio Capture & Meeting Mode:** Record directly from your **Microphone**, **Computer System Audio** (YouTube, podcasts, video playback), or **Meeting Mode** (dual-stream Web Audio mixer capturing both your mic and remote participants from Zoom, Microsoft Teams, Google Meet, and Webex).
+- **💻 Desktop Installable (PWA) & Mobile Adaptive:** Installable as a standalone native-feeling desktop app on Windows, macOS, Linux, and ChromeOS. Mobile-adaptive design with touch-friendly controls and an off-canvas navigation drawer.
+- **📦 Whole-Database JSON Backup & Transfer:** One-click full database export and import with base64 audio serialization for instant cross-device data transfers and backups.
 - **⚡ Multi-Model AI Transcription:** Connect OpenAI Whisper, Deepgram Nova-2, Groq Whisper Large v3, or private local models via Ollama.
 - **✨ Intelligent Enhancement:** Automatic stutter removal, punctuation correction, executive summaries, and key topic extraction.
 - **💬 Grounded Audio Chat:** Converse directly with your transcript. Every answer is linked to precise timestamps for verification.
 - **📑 Structured Document Generator:** Instant generation of Executive Briefs, Meeting Action Items, Technical Specs, Study Guides, and Blog Posts.
 - **☁️ Cloudflare Multi-Device Sync:** Bidirectional delta synchronization between local Dexie IndexedDB and Cloudflare D1 with Last-Write-Wins conflict resolution.
 - **📧 ZeptoMail Verified Security:** Fast OTP-based sign-up verification and secure password recovery via Zoho's ZeptoMail REST API.
+
 
 ---
 

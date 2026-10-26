@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import {
   Settings, Sun, Moon, AudioWaveform, Plus, Cloud,
   RefreshCw, User as UserIcon, LogOut, Check, ArrowLeft, Database,
+  Menu, Download,
 } from 'lucide-react';
 import { Sidebar } from '@/components/Sidebar';
 import { Workspace } from '@/components/Workspace';
@@ -9,6 +10,7 @@ import { SettingsModal } from '@/components/SettingsModal';
 import { LandingPage } from '@/components/LandingPage';
 import { AuthModal, type AuthMode } from '@/components/AuthModal';
 import { DataBackupModal } from '@/components/DataBackupModal';
+import { usePwaInstall } from '@/lib/usePwaInstall';
 import { useTheme } from '@/lib/useTheme';
 import { useProviderSettings } from '@/lib/useProviderSettings';
 import { useAuth } from '@/lib/useAuth';
@@ -39,6 +41,7 @@ export default function App() {
   const { theme, toggle } = useTheme();
   const { settings, ready, update } = useProviderSettings();
   const auth = useAuth();
+  const pwa = usePwaInstall();
 
   const [view, setView] = useState<'landing' | 'workspace'>(() => {
     return (localStorage.getItem('sonexa_view') as 'landing' | 'workspace') || 'landing';
@@ -53,6 +56,7 @@ export default function App() {
     mode: 'signin',
   });
   const [backupOpen, setBackupOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   // Sync view preference
@@ -161,6 +165,8 @@ export default function App() {
           onToggleTheme={toggle}
           isLoggedIn={auth.isLoggedIn}
           userName={auth.user?.name}
+          canInstallApp={pwa.canInstall}
+          onInstallApp={pwa.install}
         />
         <AuthModal
           open={authModal.open}
@@ -188,12 +194,24 @@ export default function App() {
         onDeleteFolder={handleDeleteFolder}
         onMoveSession={handleMoveSession}
         onOpenBackup={() => setBackupOpen(true)}
+        mobileOpen={mobileMenuOpen}
+        onCloseMobile={() => setMobileMenuOpen(false)}
+        onInstallApp={pwa.install}
+        canInstallApp={pwa.canInstall}
       />
 
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top bar */}
-        <header className="h-12 shrink-0 border-b border-app surface flex items-center justify-between px-4">
-          <div className="flex items-center gap-3 text-xs text-muted">
+        <header className="h-12 shrink-0 border-b border-app surface flex items-center justify-between px-3 sm:px-4">
+          <div className="flex items-center gap-2 sm:gap-3 text-xs text-muted">
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="md:hidden btn-ghost !p-1.5 rounded-lg text-muted hover:text-[var(--text)]"
+              aria-label="Open sidebar navigation"
+              title="Open Menu"
+            >
+              <Menu size={18} />
+            </button>
             <button
               onClick={() => handleSetView('landing')}
               className="btn-ghost !p-1.5 rounded-lg flex items-center gap-1.5 text-xs text-soft hover:text-[var(--text)]"
@@ -202,15 +220,27 @@ export default function App() {
               <ArrowLeft size={13} />
               <span className="hidden sm:inline">Overview</span>
             </button>
-            <div className="h-4 w-[1px] bg-[var(--border)]" />
+            <div className="h-4 w-[1px] bg-[var(--border)] hidden sm:block" />
             <div className="flex items-center gap-1.5">
               <AudioWaveform size={14} className="text-primary" />
               <span className="font-medium text-[var(--text)]">Sonexa</span>
-              <span className="text-soft">· local-first</span>
+              <span className="text-soft hidden md:inline">· local-first</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1 sm:gap-1.5">
+            {/* Install Desktop App Button */}
+            {pwa.canInstall && (
+              <button
+                onClick={pwa.install}
+                className="btn-primary !py-1 !px-2.5 text-xs rounded-lg hidden sm:flex items-center gap-1.5 shadow-sm"
+                title="Install Sonexa as a desktop app"
+              >
+                <Download size={13} />
+                <span>Install App</span>
+              </button>
+            )}
+
             {/* Cloud Sync Status Badge */}
             {auth.isLoggedIn ? (
               <div className="flex items-center gap-1 mr-1">
@@ -238,7 +268,7 @@ export default function App() {
             ) : (
               <button
                 onClick={() => setAuthModal({ open: true, mode: 'signin' })}
-                className="btn-ghost !py-1 !px-2 text-xs rounded-lg text-primary hover:bg-primary/10 flex items-center gap-1 mr-1"
+                className="btn-ghost !py-1 !px-2 text-xs rounded-lg text-primary hover:bg-primary/10 flex items-center gap-1 mr-0.5 sm:mr-1"
                 title="Enable Cloudflare Multi-Device Sync"
               >
                 <Cloud size={13} />
@@ -246,8 +276,8 @@ export default function App() {
               </button>
             )}
 
-            <button onClick={() => handleNew(null)} className="btn-ghost !py-1.5 text-xs">
-              <Plus size={14} /> New
+            <button onClick={() => handleNew(null)} className="btn-ghost !py-1.5 !px-2 text-xs">
+              <Plus size={14} /> <span className="hidden sm:inline">New</span>
             </button>
 
             <button onClick={toggle} className="btn-ghost !p-2 rounded-md" aria-label="Toggle theme">

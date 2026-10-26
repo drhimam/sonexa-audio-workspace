@@ -193,3 +193,7 @@ CREATE INDEX IF NOT EXISTS idx_tokens_token ON auth_tokens(token, type);
 | **Phase 3** | Cloudflare Functions & ZeptoMail Backend | `functions/api/auth/*`, `functions/api/sync/*`, ZeptoMail email client, D1 SQL migrations. |
 | **Phase 4** | Local-First & Sync Engine Integration | Sync manager, sync status badge, settings toggle, conflict resolution. |
 | **Phase 5** | Cloudflare Pages Deployment & Documentation | Wrangler configuration, production build validation, deployment scripts, `README.md`, `doc/implementation.md`. |
+| **Phase 6** | System Audio & Meeting Audio Capture | Web Audio API dual-stream virtual mixer, Mic + System Audio mixing for Zoom, Teams, Meet, and YouTube. |
+| **Phase 7** | Desktop Installability (PWA) & Mobile Layout | Web App Manifest, Service Worker, install prompt hook, responsive mobile off-canvas drawer. |
+| **Phase 8** | Complete Database JSON Export & Import | Dexie table dump, base64 audio serialization, atomic restore transactions (merge or replace). |
+

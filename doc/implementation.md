@@ -152,3 +152,63 @@ Users wanted a complete offline data migration and transfer mechanism so that al
   - File inspection preview displaying item counts prior to confirmation.
   - Accessible via the **Workspace Header** (Database icon), **Sidebar footer** ("Backup / Transfer"), and the **AI Settings Modal**.
 
+---
+
+## 6. System Audio & Meeting Recording Architecture (Zoom, Teams, Meet & Media Playback)
+
+### The Challenge
+- Standard browser `navigator.mediaDevices.getUserMedia({ audio: true })` only captures the user's physical microphone.
+- When attending remote meetings (Zoom, Microsoft Teams, Google Meet, Slack Huddles, Discord) or watching video lectures (YouTube, Coursera, Loom), the audio originating from other attendees and computer speakers cannot be captured by mic input alone.
+- Capturing meeting audio requires recording **both** the user's voice (Mic) AND the remote attendees' voices (System Audio) into a single, synchronized stream without feedback loops.
+
+### Technical Solution: Web Audio API Dual-Stream Mixer
+1. **Source Capture:**
+   - **Microphone Stream:** Captured via `navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } })`.
+   - **System Audio Stream:** Captured via `navigator.mediaDevices.getDisplayMedia({ video: true, audio: { echoCancellation: false, noiseSuppression: false } })`. By passing `{ video: true, audio: true }`, modern browsers (Chrome, Edge, Brave, Opera) render the system screen/tab/window picker with the crucial **"Share audio"** or **"Also share system audio"** toggle.
+2. **Audio Graph Virtual Mixer:**
+   - Created an `AudioContext` and an `AudioDestinationNode` via `audioContext.createMediaStreamDestination()`.
+   - Routed the microphone stream through `audioContext.createMediaStreamSource(micStream)`.
+   - Routed the display/system audio track through `audioContext.createMediaStreamSource(displayStream)`.
+   - Connected both source nodes into the single destination node, summing both signals into a clean stereo mix.
+   - Initialized `MediaRecorder` targeting the mixed audio stream (`destinationNode.stream.getAudioTracks()`).
+3. **Graceful Track Cleanup & Life-Cycle Management:**
+   - The virtual video track from `getDisplayMedia` is immediately stopped or hidden so it consumes zero display rendering overhead.
+   - Listened to the user clicking "Stop sharing" on the browser native banner to gracefully finalize the recording.
+   - Audio tracks are automatically closed and the `AudioContext` is suspended/closed when recording terminates.
+4. **Three Intuitive Recording Modes:**
+   - 🎙️ **Microphone Only:** Ideal for personal voice memos, dictation, solo brainstorming.
+   - 🔊 **System Audio Only:** Ideal for transcribing YouTube videos, podcasts, Loom recordings, or pre-recorded webinars without picking up room noise.
+   - 👥 **Meeting Mode (Mic + System Audio):** Specifically designed for Zoom, Microsoft Teams, Google Meet, and Webex calls to record both the user and all call participants.
+5. **UI Guidance:** Added a persistent instructional banner alerting users to check the **"Share tab audio"** or **"Also share system audio"** checkbox in the browser picker.
+
+---
+
+## 7. Desktop Installability (PWA) & Mobile Adaptive Design
+
+### A. Desktop Installability (Progressive Web App - PWA)
+- **Web App Manifest (`public/manifest.json`):**
+  - Configured with `display: "standalone"`, `orientation: "any"`, `background_color: "#0a0c10"`, and `theme_color: "#6366f1"`.
+  - Defined high-res SVG app icons (`icon-192.svg`, `icon-512.svg`) and quick launch shortcuts for Direct Recording and Document Generator.
+- **Service Worker (`public/sw.js`):**
+  - Registered in `index.html`.
+  - Implements stale-while-revalidate and network-first caching strategies for shell assets.
+  - Satisfies Chromium and Safari PWA installation criteria.
+- **Install Hook (`src/lib/usePwaInstall.ts`):**
+  - Intercepts the window's `beforeinstallprompt` event and stores the deferred prompt.
+  - Detects if the app is already running in standalone mode (`window.matchMedia('(display-mode: standalone)').matches`).
+  - Provides a 1-click `promptInstall()` method triggering the native operating system desktop installation prompt on Windows, macOS, ChromeOS, and Android.
+- **App Install Controls:**
+  - Placed an **"Install App"** desktop action button with a computer icon in the main workspace header.
+  - Placed an installation banner in the mobile drawer navigation.
+
+### B. Mobile Adaptive Responsive Layout
+- **Mobile Off-Canvas Navigation Drawer:**
+  - On viewports < 768px, the static desktop sidebar is converted into an animated slide-over drawer (`Sidebar.tsx`) with a dark backdrop overlay.
+  - Added a hamburger menu button (☰) in the mobile header for effortless one-thumb drawer toggling.
+  - Clicking any session, folder, or backdrop smoothly dismisses the drawer.
+- **Touch-Friendly Controls:**
+  - Expanded tap targets to minimum 44px for primary record, pause, and stop controls.
+  - Reorganized the multi-source selector (`RecorderPanel.tsx`) into a fluid responsive grid (`grid-cols-1 sm:grid-cols-3`).
+  - Adapted the `DataBackupModal` and `AuthModal` to render with scrollable viewports on small screens.
+
+
