@@ -54,6 +54,15 @@ export interface GeneratedDocument {
 
 export type SavedItemKind = 'chat' | 'document';
 
+export interface SavedItemVersion {
+  id: string;
+  versionNumber: number;
+  title: string;
+  content: string; // markdown snapshot
+  timestamp: number;
+  note?: string;
+}
+
 export interface SavedItem {
   id: string;
   kind: SavedItemKind;
@@ -61,6 +70,8 @@ export interface SavedItem {
   content: string; // markdown
   sourceLabel?: string; // e.g. template name, or "Chat reply"
   createdAt: number;
+  updatedAt?: number;
+  versions?: SavedItemVersion[];
 }
 
 export interface Folder {

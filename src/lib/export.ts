@@ -1,5 +1,8 @@
 import { marked } from 'marked';
 
+import type { TranscriptData, EnhancedTranscript } from './types';
+import { formatTimestamp } from './utils';
+
 marked.setOptions({ gfm: true, breaks: false });
 
 export function renderMarkdown(src: string): string {
@@ -28,6 +31,128 @@ export function downloadBlob(filename: string, blob: Blob): void {
 
 export function downloadMarkdown(filename: string, md: string): void {
   downloadBlob(filename, new Blob([md], { type: 'text/markdown;charset=utf-8' }));
+}
+
+export function downloadPlainText(filename: string, text: string): void {
+  downloadBlob(filename, new Blob([text], { type: 'text/plain;charset=utf-8' }));
+}
+
+export function transcriptToPlainText(transcript: TranscriptData, sessionTitle?: string): string {
+  const lines: string[] = [];
+  if (sessionTitle) {
+    lines.push(sessionTitle);
+    lines.push('='.repeat(Math.max(sessionTitle.length, 20)));
+    lines.push('');
+  }
+
+  const meta: string[] = [];
+  if (transcript.language) meta.push(`Language: ${transcript.language}`);
+  if (transcript.provider) meta.push(`Provider: ${transcript.provider}`);
+  if (transcript.durationSec) meta.push(`Duration: ${Math.round(transcript.durationSec)}s`);
+  if (transcript.segments.length) meta.push(`Segments: ${transcript.segments.length}`);
+  if (meta.length > 0) {
+    lines.push(meta.join(' | '));
+    lines.push('');
+  }
+
+  for (const s of transcript.segments) {
+    const time = `[${formatTimestamp(s.start)}]`;
+    const speaker = s.speaker ? `${s.speaker}: ` : '';
+    lines.push(`${time} ${speaker}${s.text}`);
+  }
+
+  return lines.join('\n');
+}
+
+export function transcriptToMarkdown(transcript: TranscriptData, sessionTitle?: string): string {
+  const lines: string[] = [];
+  lines.push(`# ${sessionTitle || 'Audio Transcript'}`);
+  lines.push('');
+
+  const meta: string[] = [];
+  if (transcript.language) meta.push(`- **Language:** ${transcript.language}`);
+  if (transcript.provider) meta.push(`- **Provider:** ${transcript.provider}`);
+  if (transcript.durationSec) meta.push(`- **Duration:** ${Math.round(transcript.durationSec)} seconds`);
+  meta.push(`- **Segments:** ${transcript.segments.length}`);
+  lines.push(meta.join('\n'));
+  lines.push('');
+  lines.push('---');
+  lines.push('');
+
+  for (const s of transcript.segments) {
+    const header = s.speaker ? `### [${formatTimestamp(s.start)}] ${s.speaker}` : `**[${formatTimestamp(s.start)}]**`;
+    lines.push(header);
+    lines.push('');
+    lines.push(s.text);
+    lines.push('');
+  }
+
+  return lines.join('\n').trim();
+}
+
+export function enhancedTranscriptToPlainText(enhanced: EnhancedTranscript, sessionTitle?: string): string {
+  const lines: string[] = [];
+  const heading = `${sessionTitle || 'Audio Transcript'} (Enhanced)`;
+  lines.push(heading);
+  lines.push('='.repeat(Math.max(heading.length, 20)));
+  lines.push('');
+
+  if (enhanced.summary) {
+    lines.push('EXECUTIVE SUMMARY');
+    lines.push('-----------------');
+    lines.push(enhanced.summary);
+    lines.push('');
+  }
+
+  if (enhanced.topics && enhanced.topics.length > 0) {
+    lines.push('KEY TOPICS');
+    lines.push('----------');
+    lines.push(enhanced.topics.map((t) => `• ${t}`).join('\n'));
+    lines.push('');
+  }
+
+  lines.push('TRANSCRIPT');
+  lines.push('----------');
+  for (const s of enhanced.segments) {
+    const time = `[${formatTimestamp(s.start)}]`;
+    const speaker = s.speaker ? `${s.speaker}: ` : '';
+    lines.push(`${time} ${speaker}${s.text}`);
+  }
+
+  return lines.join('\n');
+}
+
+export function enhancedTranscriptToMarkdown(enhanced: EnhancedTranscript, sessionTitle?: string): string {
+  const lines: string[] = [];
+  lines.push(`# ${sessionTitle || 'Audio Transcript'} — Enhanced`);
+  lines.push('');
+
+  if (enhanced.summary) {
+    lines.push('## Executive Summary');
+    lines.push('');
+    lines.push(`> ${enhanced.summary}`);
+    lines.push('');
+  }
+
+  if (enhanced.topics && enhanced.topics.length > 0) {
+    lines.push('**Key Topics:** ' + enhanced.topics.map((t) => `\`${t}\``).join(' '));
+    lines.push('');
+  }
+
+  lines.push('---');
+  lines.push('');
+  lines.push('## Cleaned Dialogue');
+  lines.push('');
+
+  for (const s of enhanced.segments) {
+    const header = s.speaker ? `### [${formatTimestamp(s.start)}] ${s.speaker}` : `**[${formatTimestamp(s.start)}]**`;
+    lines.push(header);
+    lines.push('');
+    lines.push(s.text);
+    lines.push('');
+  }
+
+  return lines.join('\n').trim();
 }
 
 // Minimal PDF export via printable HTML window — no heavy deps. Preserves
@@ -67,7 +192,7 @@ export function exportPdf(htmlTitle: string, markdown: string): void {
   }, 350);
 }
 
-function slug(s: string): string {
+export function slug(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'document';
 }
 

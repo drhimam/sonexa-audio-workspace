@@ -239,5 +239,35 @@ Remote conferencing (Zoom, Google Meet, Microsoft Teams, Slack Huddles, Webex) i
    - Pushed updates to GitHub repository `origin/main`.
    - Deployed updated client assets and edge functions to Cloudflare Pages (`sonexa.pages.dev`).
 
+---
+
+## 9. Plaintext & Markdown Transcript Exports, Focus Mode & Version-Controlled Content
+
+### Motivation & Requirements
+1. **Multi-Format Export for Transcripts:** Users required direct, one-click access to download both raw transcripts and AI-enhanced transcripts in standard Plain Text (`.txt`) and Markdown (`.md`) format for archiving, importing into notes apps (Obsidian, Notion, Logseq), and sharing.
+2. **Focus Mode / Fullscreen Reader:** Saved documents and chat insights benefit from a distraction-free reading and editing environment free from panels, tabs, and sidebars.
+3. **Version-Controlled Editing:** Users need the ability to edit saved summaries, meeting minutes, and chat replies while maintaining a complete, non-destructive audit trail of revisions with 1-click restoration of any historical snapshot.
+
+### Architecture & Changes Implemented
+1. **Serialization & Export Engine (`src/lib/export.ts`):**
+   - Added `downloadPlainText`: Dispatches UTF-8 plain text file downloads with standard MIME headers.
+   - Added `transcriptToPlainText` & `transcriptToMarkdown`: Formats raw transcript segments with timestamps, speakers, and metadata headers.
+   - Added `enhancedTranscriptToPlainText` & `enhancedTranscriptToMarkdown`: Structures enhanced transcripts with executive summaries, topic tags, and cleaned dialogue.
+   - Exported `slug` utility for sanitized, predictable filenames.
+2. **Transcript Views (`TranscriptView.tsx` & `EnhancedTranscriptPanel.tsx`):**
+   - Implemented `.txt` and `.md` download action buttons in headers.
+   - Passed `sessionTitle` for context-aware, user-friendly filenames.
+3. **Domain Model Versioning (`src/lib/types.ts`):**
+   - Defined `SavedItemVersion` interface (`id`, `versionNumber`, `title`, `content`, `timestamp`, `note`).
+   - Extended `SavedItem` with `updatedAt` and `versions: SavedItemVersion[]`.
+4. **Saved Panel with Focus Mode & Version Control (`src/components/SavedPanel.tsx`):**
+   - **Focus Mode:** Implemented full-screen distraction-free reader/editor with Escape key listener, reading time estimates, and live word counter.
+   - **Markdown Editor:** Integrated write/preview tabs, title editing, optional revision notes, and Tab key indentation.
+   - **Version History Engine:** Snapshots previous states before saving new edits or reverting, ensuring zero data loss.
+   - **Revision Timeline Drawer:** Displays version numbers, timestamps, notes, with instant snapshot preview and one-click rollback.
+   - **Exports:** Supported `.txt`, `.md`, PDF, and clipboard copy for all saved items.
+5. **Workspace State Synchronization (`src/components/Workspace.tsx`):**
+   - Implemented `updateSavedItem` dispatching session patches that immediately persist to IndexedDB and sync to Cloudflare D1.
+
 
 

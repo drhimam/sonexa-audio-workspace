@@ -1,12 +1,20 @@
 import { useMemo, useState } from 'react';
 import {
-  Wand2, Loader2, FileText, Sparkles, Tag, RefreshCw, AlertCircle, Check, Copy,
+  Wand2, Loader2, FileText, Sparkles, Tag, RefreshCw, AlertCircle, Check, Copy, Download,
 } from 'lucide-react';
 import type { EnhancedTranscript, TranscriptData } from '@/lib/types';
 import { formatTimestamp } from '@/lib/utils';
-import { copyToClipboard } from '@/lib/export';
+import {
+  copyToClipboard,
+  downloadMarkdown,
+  downloadPlainText,
+  enhancedTranscriptToMarkdown,
+  enhancedTranscriptToPlainText,
+  slug,
+} from '@/lib/export';
 
 interface EnhancedTranscriptPanelProps {
+  sessionTitle?: string;
   raw: TranscriptData | null;
   enhanced: EnhancedTranscript | null;
   enhancing: boolean;
@@ -16,10 +24,22 @@ interface EnhancedTranscriptPanelProps {
 }
 
 export function EnhancedTranscriptPanel({
-  raw, enhanced, enhancing, error, onGenerate, onRegenerate,
+  sessionTitle, raw, enhanced, enhancing, error, onGenerate, onRegenerate,
 }: EnhancedTranscriptPanelProps) {
   const [copied, setCopied] = useState(false);
   const hasRaw = !!raw && raw.segments.length > 0;
+
+  const handleDownloadTxt = () => {
+    if (!enhanced) return;
+    const filename = `${slug(sessionTitle || 'transcript')}-enhanced.txt`;
+    downloadPlainText(filename, enhancedTranscriptToPlainText(enhanced, sessionTitle));
+  };
+
+  const handleDownloadMd = () => {
+    if (!enhanced) return;
+    const filename = `${slug(sessionTitle || 'transcript')}-enhanced.md`;
+    downloadMarkdown(filename, enhancedTranscriptToMarkdown(enhanced, sessionTitle));
+  };
 
   const fullText = useMemo(() => {
     if (!enhanced) return '';
@@ -82,10 +102,16 @@ export function EnhancedTranscriptPanel({
         <h3 className="text-sm font-semibold">Enhanced transcript</h3>
         <span className="chip surface-2 text-muted ml-1">{enhanced.segments.length} segments</span>
         <div className="ml-auto flex items-center gap-1">
-          <button onClick={handleCopy} className="btn-ghost !py-1.5 !px-2 text-xs">
+          <button onClick={handleCopy} className="btn-ghost !py-1.5 !px-2 text-xs" title="Copy transcript">
             {copied ? <Check size={13} className="text-primary" /> : <Copy size={13} />} Copy
           </button>
-          <button onClick={onRegenerate} disabled={enhancing} className="btn-ghost !py-1.5 !px-2 text-xs">
+          <button onClick={handleDownloadTxt} className="btn-ghost !py-1.5 !px-2 text-xs flex items-center gap-1" title="Download Plain Text (.txt)">
+            <Download size={13} /> .txt
+          </button>
+          <button onClick={handleDownloadMd} className="btn-ghost !py-1.5 !px-2 text-xs flex items-center gap-1" title="Download Markdown (.md)">
+            <Download size={13} /> .md
+          </button>
+          <button onClick={onRegenerate} disabled={enhancing} className="btn-ghost !py-1.5 !px-2 text-xs" title="Regenerate enhanced transcript">
             <RefreshCw size={13} /> Regenerate
           </button>
         </div>

@@ -1,9 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Loader2, Pencil, Check, X, FileText, Search } from 'lucide-react';
+import { Loader2, Pencil, Check, X, FileText, Search, Download, Copy } from 'lucide-react';
 import type { TranscriptData, TranscriptSegment } from '@/lib/types';
 import { formatTimestamp, clsx, uid } from '@/lib/utils';
+import {
+  copyToClipboard,
+  downloadMarkdown,
+  downloadPlainText,
+  transcriptToMarkdown,
+  transcriptToPlainText,
+  slug,
+} from '@/lib/export';
 
 interface TranscriptViewProps {
+  sessionTitle?: string;
   transcript: TranscriptData | null;
   status: SessionStatusLite;
   progressLabel?: string;
@@ -14,11 +23,34 @@ interface TranscriptViewProps {
 
 type SessionStatusLite = 'recording' | 'recorded' | 'transcribing' | 'transcribed' | 'enhancing' | 'enhanced' | 'error';
 
-export function TranscriptView({ transcript, status, progressLabel, currentSec, onSeek, onChange }: TranscriptViewProps) {
+export function TranscriptView({ sessionTitle, transcript, status, progressLabel, currentSec, onSeek, onChange }: TranscriptViewProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
   const [query, setQuery] = useState('');
+  const [copied, setCopied] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
+
+  const handleCopy = async () => {
+    if (!transcript) return;
+    const txt = transcriptToPlainText(transcript, sessionTitle);
+    const ok = await copyToClipboard(txt);
+    if (ok) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    }
+  };
+
+  const handleDownloadTxt = () => {
+    if (!transcript) return;
+    const filename = `${slug(sessionTitle || 'transcript')}-raw.txt`;
+    downloadPlainText(filename, transcriptToPlainText(transcript, sessionTitle));
+  };
+
+  const handleDownloadMd = () => {
+    if (!transcript) return;
+    const filename = `${slug(sessionTitle || 'transcript')}-raw.md`;
+    downloadMarkdown(filename, transcriptToMarkdown(transcript, sessionTitle));
+  };
 
   const activeId = useMemo(() => {
     if (!transcript || currentSec == null) return null;
@@ -80,18 +112,48 @@ export function TranscriptView({ transcript, status, progressLabel, currentSec, 
 
   return (
     <div className="card flex flex-col h-full overflow-hidden">
-      <div className="px-4 py-2.5 border-b border-app flex items-center gap-2">
+      <div className="px-4 py-2.5 border-b border-app flex items-center gap-2 flex-wrap">
         <FileText size={15} className="text-primary" />
         <h3 className="text-sm font-semibold">Transcript</h3>
         <span className="chip surface-2 text-muted ml-1">{transcript.segments.length} segments</span>
-        <div className="ml-auto relative">
-          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-soft" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search transcript…"
-            className="input !py-1.5 !pl-8 text-xs w-44"
-          />
+
+        <div className="ml-auto flex items-center gap-1.5 flex-wrap">
+          <div className="relative">
+            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-soft" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search transcript…"
+              className="input !py-1.5 !pl-8 text-xs w-32 sm:w-40"
+            />
+          </div>
+
+          <button
+            onClick={handleCopy}
+            className="btn-ghost !py-1.5 !px-2 text-xs"
+            title="Copy plain text transcript"
+          >
+            {copied ? <Check size={13} className="text-primary" /> : <Copy size={13} />}
+            <span className="hidden sm:inline">Copy</span>
+          </button>
+
+          <button
+            onClick={handleDownloadTxt}
+            className="btn-ghost !py-1.5 !px-2 text-xs flex items-center gap-1"
+            title="Download Plain Text (.txt)"
+          >
+            <Download size={13} />
+            <span>.txt</span>
+          </button>
+
+          <button
+            onClick={handleDownloadMd}
+            className="btn-ghost !py-1.5 !px-2 text-xs flex items-center gap-1"
+            title="Download Markdown (.md)"
+          >
+            <Download size={13} />
+            <span>.md</span>
+          </button>
         </div>
       </div>
       <div ref={listRef} className="flex-1 overflow-y-auto scroll-thin px-2 py-2">

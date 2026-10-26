@@ -194,6 +194,11 @@ export function Workspace({ session, settings, onSessionChange }: WorkspaceProps
   const removeSavedItem = (id: string) => {
     patch({ savedItems: savedItems.filter((i) => i.id !== id) });
   };
+  const updateSavedItem = (updated: SavedItem) => {
+    patch({
+      savedItems: savedItems.map((i) => (i.id === updated.id ? updated : i)),
+    });
+  };
 
   const tabBadges: Partial<Record<Tab, number>> = {
     chat: session.chat.length,
@@ -312,6 +317,7 @@ export function Workspace({ session, settings, onSessionChange }: WorkspaceProps
       <div className="flex-1 overflow-hidden p-4">
         {tab === 'transcript' && (
           <TranscriptView
+            sessionTitle={session.title}
             transcript={session.transcript ?? null}
             status={session.status}
             progressLabel={transcribeProgress?.label}
@@ -320,6 +326,7 @@ export function Workspace({ session, settings, onSessionChange }: WorkspaceProps
         )}
         {tab === 'enhanced' && (
           <EnhancedTranscriptPanel
+            sessionTitle={session.title}
             raw={session.transcript ?? null}
             enhanced={session.enhancedTranscript ?? null}
             enhancing={isEnhancing}
@@ -349,7 +356,11 @@ export function Workspace({ session, settings, onSessionChange }: WorkspaceProps
           />
         )}
         {tab === 'saved' && (
-          <SavedPanel items={savedItems} onDelete={removeSavedItem} />
+          <SavedPanel
+            items={savedItems}
+            onDelete={removeSavedItem}
+            onUpdateItem={updateSavedItem}
+          />
         )}
       </div>
     </div>
