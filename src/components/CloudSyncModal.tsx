@@ -32,13 +32,16 @@ interface CloudSyncModalProps {
     disconnectWebDav: () => Promise<void>;
     syncNow: () => Promise<any>;
   };
-  onOpenAuth?: () => void;
 }
 
-export function CloudSyncModal({ open, onClose, cloudSync, onOpenAuth }: CloudSyncModalProps) {
+export function CloudSyncModal({ open, onClose, cloudSync }: CloudSyncModalProps) {
   const { settings, status, syncError, updateSettings, setActiveProvider, syncNow } = cloudSync;
 
-  const [activeTab, setActiveTab] = useState<CloudProviderId>(settings.activeProvider || 'google-drive');
+  const [activeTab, setActiveTab] = useState<'google-drive' | 'onedrive' | 'webdav'>(
+    settings.activeProvider === 'onedrive' || settings.activeProvider === 'webdav'
+      ? settings.activeProvider
+      : 'google-drive'
+  );
   const [googleClientId, setGoogleClientId] = useState(settings.googleDrive.clientId || '');
   const [showGoogleAdvanced, setShowGoogleAdvanced] = useState(
     !(settings.googleDrive.clientId || import.meta.env.VITE_GOOGLE_CLIENT_ID)
@@ -57,7 +60,7 @@ export function CloudSyncModal({ open, onClose, cloudSync, onOpenAuth }: CloudSy
   const [busy, setBusy] = useState(false);
   const [actionMessage, setActionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  const handleSelectActive = async (provider: CloudProviderId) => {
+  const handleSelectActive = async (provider: 'google-drive' | 'onedrive' | 'webdav') => {
     setActiveTab(provider);
     await setActiveProvider(provider);
     setActionMessage({ type: 'success', text: `Switched active cloud sync to ${CLOUD_PROVIDER_META[provider].name}` });
@@ -193,7 +196,7 @@ export function CloudSyncModal({ open, onClose, cloudSync, onOpenAuth }: CloudSy
         )}
 
         {/* Provider Tabs */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           {/* Google Drive */}
           <button
             type="button"
@@ -268,32 +271,6 @@ export function CloudSyncModal({ open, onClose, cloudSync, onOpenAuth }: CloudSy
               <div className="text-xs font-semibold text-app">WebDAV</div>
               <div className="text-[11px] text-muted">
                 {settings.webdav.connected ? 'Connected' : 'Nextcloud'}
-              </div>
-            </div>
-          </button>
-
-          {/* Sonexa Cloud / Cloudflare */}
-          <button
-            type="button"
-            onClick={() => setActiveTab('cloudflare')}
-            className={`p-2.5 rounded-xl border text-left transition-all relative flex flex-col justify-between ${
-              activeTab === 'cloudflare'
-                ? 'border-primary bg-primary/5 shadow-sm'
-                : 'border-app hover:border-primary/40 bg-surface'
-            }`}
-          >
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-base">⚡</span>
-              {settings.activeProvider === 'cloudflare' && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
-                  Active
-                </span>
-              )}
-            </div>
-            <div>
-              <div className="text-xs font-semibold text-app">Sonexa Cloud</div>
-              <div className="text-[11px] text-muted">
-                {settings.cloudflare.connected ? 'Connected' : 'Cloudflare D1'}
               </div>
             </div>
           </button>
@@ -386,7 +363,7 @@ export function CloudSyncModal({ open, onClose, cloudSync, onOpenAuth }: CloudSy
                     className="btn-primary w-full py-2 flex items-center justify-center gap-2 shadow-sm font-medium"
                   >
                     {busy ? <RefreshCw size={14} className="animate-spin" /> : <Cloud size={14} />}
-                    <span>Sign in with Google & Connect Drive</span>
+                    <span>Connect Google Drive</span>
                   </button>
                 </div>
               )}
@@ -578,62 +555,6 @@ export function CloudSyncModal({ open, onClose, cloudSync, onOpenAuth }: CloudSy
             </div>
           )}
 
-          {/* 4. SONEXA CLOUD (CLOUDFLARE D1) */}
-          {activeTab === 'cloudflare' && (
-            <div className="space-y-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h4 className="text-sm font-semibold text-app">Sonexa Cloud (Built-in Edge Database)</h4>
-                  <p className="text-xs text-muted mt-0.5">
-                    Sync using your Sonexa account and Cloudflare D1 global edge database.
-                  </p>
-                </div>
-                {settings.activeProvider !== 'cloudflare' && (
-                  <button
-                    onClick={() => handleSelectActive('cloudflare')}
-                    className="btn-secondary !py-1 !px-2.5 text-xs flex items-center gap-1"
-                  >
-                    <span>Set as Active</span>
-                    <ArrowRight size={12} />
-                  </button>
-                )}
-              </div>
-
-              {settings.cloudflare.connected ? (
-                <div className="p-3 rounded-lg bg-surface-hover border border-app flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                    <div>
-                      <div className="text-xs font-semibold text-app">Sonexa Account Connected</div>
-                      <div className="text-[11px] text-muted">{settings.cloudflare.userEmail || 'Active Session'}</div>
-                    </div>
-                  </div>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium">
-                    Verified
-                  </span>
-                </div>
-              ) : (
-                <div className="p-3 rounded-lg border border-dashed border-app text-center space-y-2">
-                  <p className="text-xs text-muted">
-                    Sign in with your Sonexa account to use the built-in Cloudflare edge synchronization.
-                  </p>
-                  {onOpenAuth && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onClose();
-                        onOpenAuth();
-                      }}
-                      className="btn-primary text-xs mx-auto flex items-center gap-1.5"
-                    >
-                      <Database size={13} />
-                      <span>Sign In / Create Account</span>
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Sync Controls & Options */}

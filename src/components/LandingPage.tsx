@@ -8,24 +8,18 @@ import {
 
 interface LandingPageProps {
   onLaunchWorkspace: () => void;
-  onOpenAuth: (mode?: 'signin' | 'signup') => void;
   onOpenCloudSync?: () => void;
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
-  isLoggedIn: boolean;
-  userName?: string;
   canInstallApp?: boolean;
   onInstallApp?: () => void;
 }
 
 export function LandingPage({
   onLaunchWorkspace,
-  onOpenAuth,
   onOpenCloudSync,
   theme,
   onToggleTheme,
-  isLoggedIn,
-  userName,
   canInstallApp,
   onInstallApp,
 }: LandingPageProps) {
@@ -54,14 +48,6 @@ export function LandingPage({
           </div>
 
           <div className="flex items-center gap-2 sm:gap-2.5">
-            <button
-              onClick={onToggleTheme}
-              className="btn-ghost !p-2 rounded-lg"
-              aria-label="Toggle theme"
-            >
-              {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
-            </button>
-
             {canInstallApp && (
               <button
                 onClick={onInstallApp}
@@ -72,6 +58,7 @@ export function LandingPage({
                 <span>Install App</span>
               </button>
             )}
+
             <button
               onClick={onToggleTheme}
               className="btn-ghost !p-2 rounded-lg"
@@ -80,31 +67,13 @@ export function LandingPage({
               {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
             </button>
 
-            {isLoggedIn ? (
-              <button
-                onClick={onLaunchWorkspace}
-                className="btn-primary !py-2 !px-4 text-xs font-semibold shadow-soft"
-              >
-                <span>Workspace ({userName || 'Account'})</span>
-                <ArrowRight size={14} />
-              </button>
-            ) : (
-              <>
-                <button
-                  onClick={() => onOpenAuth('signin')}
-                  className="btn-ghost text-xs !py-2 !px-3 font-medium"
-                >
-                  Sign In
-                </button>
-                <button
-                  onClick={onLaunchWorkspace}
-                  className="btn-primary !py-2 !px-4 text-xs font-semibold shadow-soft"
-                >
-                  <span>Launch Free</span>
-                  <ArrowRight size={14} />
-                </button>
-              </>
-            )}
+            <button
+              onClick={onLaunchWorkspace}
+              className="btn-primary !py-2 !px-4 text-xs font-semibold shadow-soft flex items-center gap-1.5"
+            >
+              <span>Launch Workspace</span>
+              <ArrowRight size={14} />
+            </button>
           </div>
         </div>
       </nav>
@@ -137,7 +106,7 @@ export function LandingPage({
               className="btn-primary !py-3.5 !px-6 text-sm font-semibold rounded-xl shadow-soft w-full sm:w-auto flex items-center justify-center gap-2 group"
             >
               <Mic size={18} className="group-hover:scale-110 transition-transform" />
-              <span>Launch Free Workspace (No Sign-Up)</span>
+              <span>Launch Workspace</span>
               <ArrowRight size={16} />
             </button>
 
@@ -323,7 +292,7 @@ export function LandingPage({
               </div>
               <h3 className="font-semibold text-base mb-2">100% Local-First Storage</h3>
               <p className="text-sm text-muted leading-relaxed">
-                Your recordings and transcripts are saved in browser IndexedDB via Dexie.js. No forced sign-up, zero latency, and complete privacy by default.
+                Your recordings and transcripts are saved directly in browser IndexedDB via Dexie.js. Zero latency, complete privacy, and full offline capability by default.
               </p>
             </div>
 
@@ -354,9 +323,9 @@ export function LandingPage({
               <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center mb-4">
                 <Shield size={20} />
               </div>
-              <h3 className="font-semibold text-base mb-2">ZeptoMail Verified Auth</h3>
+              <h3 className="font-semibold text-base mb-2">Zero-Knowledge Privacy</h3>
               <p className="text-sm text-muted leading-relaxed">
-                Enterprise-grade transactional email verification, OTP login, and secure password recovery dispatched instantly via Zoho's ZeptoMail REST API.
+                Everything runs locally in your browser. Your voice recordings, transcripts, and AI prompts are never stored or tracked on any central server.
               </p>
             </div>
 
@@ -407,7 +376,7 @@ export function LandingPage({
                 <div className="mt-6 space-y-3 text-sm">
                   <div className="flex items-center gap-2">
                     <CheckCircle2 size={16} className="text-primary shrink-0" />
-                    <span>No sign-up or credit card required</span>
+                    <span>100% free with zero configuration</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle2 size={16} className="text-primary shrink-0" />
@@ -441,7 +410,7 @@ export function LandingPage({
                   <Cloud size={13} /> Multi-Provider Cloud Sync
                 </div>
                 <h3 className="text-xl font-bold">Your Cloud, Your Rules</h3>
-                <p className="text-xs text-muted mt-2">Bring your own Google Drive, OneDrive, Nextcloud/WebDAV, or use Sonexa Cloud.</p>
+                <p className="text-xs text-muted mt-2">Bring your own Google Drive, OneDrive, or Nextcloud/WebDAV storage.</p>
                 <div className="mt-6 space-y-3 text-sm">
                   <div className="flex items-center gap-2">
                     <CheckCircle2 size={16} className="text-primary shrink-0" />
@@ -457,7 +426,7 @@ export function LandingPage({
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle2 size={16} className="text-primary shrink-0" />
-                    <span>Built-in Sonexa Cloud (Cloudflare edge database)</span>
+                    <span>Client-side direct synchronization</span>
                   </div>
                 </div>
               </div>
@@ -478,7 +447,7 @@ export function LandingPage({
         <div className="max-w-4xl mx-auto px-4 text-center">
           <h2 className="text-2xl sm:text-3xl font-extrabold">Ready to Transcribe and Master Your Audio?</h2>
           <p className="mt-3 text-sm text-muted">
-            Start a new session right now without signing up, or create an account for Cloudflare synchronization.
+            Start a new session right now directly in your browser. All your recordings and transcripts remain entirely private and local.
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <button
@@ -516,7 +485,7 @@ export function LandingPage({
               GitHub Repository
             </a>
             <span>·</span>
-            <span>ZeptoMail Transactional Engine</span>
+            <span>Client-Side Local-First Architecture</span>
             <span>·</span>
             <span>Cloudflare Edge Stack</span>
           </div>

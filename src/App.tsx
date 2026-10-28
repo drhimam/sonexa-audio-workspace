@@ -1,20 +1,18 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import {
   Settings, Sun, Moon, AudioWaveform, Plus, Cloud,
-  RefreshCw, User as UserIcon, LogOut, Check, ArrowLeft, Database,
+  RefreshCw, ArrowLeft, Database,
   Menu, Download,
 } from 'lucide-react';
 import { Sidebar } from '@/components/Sidebar';
 import { Workspace } from '@/components/Workspace';
 import { SettingsModal } from '@/components/SettingsModal';
 import { LandingPage } from '@/components/LandingPage';
-import { AuthModal, type AuthMode } from '@/components/AuthModal';
 import { DataBackupModal } from '@/components/DataBackupModal';
 import { NewSessionModal } from '@/components/NewSessionModal';
 import { usePwaInstall } from '@/lib/usePwaInstall';
 import { useTheme } from '@/lib/useTheme';
 import { useProviderSettings } from '@/lib/useProviderSettings';
-import { useAuth } from '@/lib/useAuth';
 import { runBidirectionalSync } from '@/lib/sync';
 import {
   listSessions, saveSession, deleteSession, getSession, updateSession,
@@ -30,7 +28,6 @@ import { uid } from '@/lib/utils';
 export default function App() {
   const { theme, toggle } = useTheme();
   const { settings, ready, update } = useProviderSettings();
-  const auth = useAuth();
   const cloudSync = useCloudSync();
   const pwa = usePwaInstall();
 
@@ -45,24 +42,10 @@ export default function App() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [cloudSyncModalOpen, setCloudSyncModalOpen] = useState(false);
-  const [authModal, setAuthModal] = useState<{ open: boolean; mode: AuthMode }>({
-    open: false,
-    mode: 'signin',
-  });
   const [backupOpen, setBackupOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [newSessionModalOpen, setNewSessionModalOpen] = useState(false);
   const [newSessionFolderId, setNewSessionFolderId] = useState<string | null>(null);
-
-  // Sync Cloudflare auth state with multi-cloud provider
-  useEffect(() => {
-    if (auth.token) {
-      cloudSync.setCloudflareAuth(auth.token, auth.user?.email);
-    } else {
-      cloudSync.setCloudflareAuth(null);
-    }
-  }, [auth.token, auth.user?.email, cloudSync.setCloudflareAuth]);
 
   // Sync view preference
   const handleSetView = (v: 'landing' | 'workspace') => {
@@ -115,7 +98,7 @@ export default function App() {
   useEffect(() => {
     if (cloudSync.settings.activeProvider === 'none' || !cloudSync.settings.autoSync) return;
 
-    // Run initial sync once upon login / provider select
+    // Run initial sync once upon provider select
     handleTriggerSync();
 
     // Heartbeat every 5 minutes (300,000ms)
@@ -227,30 +210,16 @@ export default function App() {
       <>
         <LandingPage
           onLaunchWorkspace={() => handleSetView('workspace')}
-          onOpenAuth={(mode = 'signin') => setAuthModal({ open: true, mode })}
           onOpenCloudSync={() => setCloudSyncModalOpen(true)}
           theme={theme}
           onToggleTheme={toggle}
-          isLoggedIn={auth.isLoggedIn}
-          userName={auth.user?.name}
           canInstallApp={pwa.canInstall}
           onInstallApp={pwa.install}
-        />
-        <AuthModal
-          open={authModal.open}
-          initialMode={authModal.mode}
-          onClose={() => setAuthModal({ open: false, mode: 'signin' })}
-          auth={auth}
-          onSuccess={() => {
-            setCloudSyncModalOpen(true);
-            handleSetView('workspace');
-          }}
         />
         <CloudSyncModal
           open={cloudSyncModalOpen}
           onClose={() => setCloudSyncModalOpen(false)}
           cloudSync={cloudSync}
-          onOpenAuth={() => setAuthModal({ open: true, mode: 'signin' })}
         />
       </>
     );
@@ -374,71 +343,6 @@ export default function App() {
             <button onClick={() => setSettingsOpen(true)} className="btn-ghost !p-2 rounded-md" aria-label="Settings">
               <Settings size={16} />
             </button>
-
-            {/* User Profile / Auth Button */}
-            {auth.isLoggedIn ? (
-              <div className="relative">
-                <button
-                  onClick={() => setUserMenuOpen((o) => !o)}
-                  className="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs hover:ring-2 hover:ring-primary/40 transition"
-                  aria-label="User Account"
-                >
-                  {auth.user?.name ? auth.user.name.charAt(0).toUpperCase() : 'U'}
-                </button>
-
-                {userMenuOpen && (
-                  <div className="absolute right-0 top-9 z-50 surface border border-app rounded-xl shadow-soft-dark py-2 w-60 animate-slide-up text-xs">
-                    <div className="px-3 py-1.5 border-b border-app">
-                      <p className="font-semibold text-[var(--text)] truncate">{auth.user?.name || 'Account'}</p>
-                      <p className="text-[11px] text-muted truncate">{auth.user?.email}</p>
-                      <div className="flex items-center gap-1 text-[10px] text-primary mt-1">
-                        <Check size={11} /> ZeptoMail Verified
-                      </div>
-                    </div>
-
-                    <div className="px-3 py-2 border-b border-app space-y-1">
-                      <div className="flex items-center justify-between text-muted">
-                        <span>Active Cloud:</span>
-                        <span className="text-primary font-medium">{cloudSync.activeMeta.shortName}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-muted">
-                        <span>Sync Status:</span>
-                        <span className="text-soft capitalize">{cloudSync.status}</span>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => {
-                        setUserMenuOpen(false);
-                        setCloudSyncModalOpen(true);
-                      }}
-                      className="w-full text-left px-3 py-1.5 hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2 transition"
-                    >
-                      <Cloud size={13} className="text-primary" />
-                      <span>Cloud Storage Providers</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        auth.signOut();
-                        setUserMenuOpen(false);
-                      }}
-                      className="w-full text-left px-3 py-2 text-red-500 hover:bg-red-500/10 flex items-center gap-2 mt-1"
-                    >
-                      <LogOut size={13} /> Sign Out of Cloud
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <button
-                onClick={() => setAuthModal({ open: true, mode: 'signin' })}
-                className="btn-outline !py-1 !px-2.5 text-xs rounded-lg"
-              >
-                <UserIcon size={13} />
-                <span>Sign In</span>
-              </button>
-            )}
           </div>
         </header>
 
@@ -472,15 +376,6 @@ export default function App() {
         open={cloudSyncModalOpen}
         onClose={() => setCloudSyncModalOpen(false)}
         cloudSync={cloudSync}
-        onOpenAuth={() => setAuthModal({ open: true, mode: 'signin' })}
-      />
-
-      <AuthModal
-        open={authModal.open}
-        initialMode={authModal.mode}
-        onClose={() => setAuthModal({ open: false, mode: 'signin' })}
-        auth={auth}
-        onSuccess={() => setCloudSyncModalOpen(true)}
       />
 
       <DataBackupModal
