@@ -46,6 +46,7 @@ export function Sidebar({
 }: SidebarProps) {
   const [query, setQuery] = useState('');
   const [menuId, setMenuId] = useState<string | null>(null);
+  const [folderMenuId, setFolderMenuId] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [folderModal, setFolderModal] = useState<null | { mode: 'create' } | { mode: 'rename'; folder: Folder }>(null);
   const [moveModal, setMoveModal] = useState<Session | null>(null);
@@ -128,7 +129,7 @@ export function Sidebar({
           </button>
         </div>
         {menuId === s.id && (
-          <div className="absolute right-2 top-10 z-20 surface border border-app rounded-lg shadow-soft-dark py-1 w-44 animate-slide-up" onClick={(e) => e.stopPropagation()}>
+          <div className="absolute right-2 top-10 z-30 surface border border-app rounded-lg shadow-soft-dark py-1 w-44 animate-slide-up" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={() => { setMoveModal(s); setMenuId(null); }}
               className="w-full text-left px-3 py-1.5 text-xs hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2"
@@ -147,7 +148,7 @@ export function Sidebar({
     );
   };
 
-  const renderFolderHeader = (label: string, count: number, key: string, actions?: React.ReactNode) => {
+  const renderFolderHeader = (label: string, count: number, key: string, folder?: Folder) => {
     const isCollapsed = collapsed[key];
     const isUnfiled = key === NO_FOLDER;
 
@@ -155,7 +156,7 @@ export function Sidebar({
       <div
         onClick={() => toggleCollapse(key)}
         className={clsx(
-          'group cursor-pointer rounded-xl px-2.5 py-2 my-1.5 transition-all border flex items-center gap-2.5 select-none shadow-xs',
+          'group relative cursor-pointer rounded-xl px-2.5 py-2 my-1.5 transition-all border flex items-center gap-2 select-none shadow-xs',
           isUnfiled
             ? 'border-app/70 bg-black/[0.02] dark:bg-white/[0.02] hover:bg-black/[0.04] dark:hover:bg-white/[0.04]'
             : 'border-primary/25 bg-primary/[0.04] dark:bg-primary/[0.06] hover:border-primary/45 hover:bg-primary/[0.08]'
@@ -167,64 +168,121 @@ export function Sidebar({
             e.stopPropagation();
             toggleCollapse(key);
           }}
-          className="btn-ghost !p-1 !rounded-md shrink-0"
+          className="btn-ghost !p-1 !rounded-md shrink-0 text-muted hover:text-[var(--text)]"
           aria-label={isCollapsed ? 'Expand folder' : 'Collapse folder'}
         >
           {isCollapsed ? (
-            <ChevronRight size={15} className="text-muted" />
+            <ChevronRight size={14} className="text-muted" />
           ) : (
-            <ChevronDown size={15} className="text-muted" />
+            <ChevronDown size={14} className="text-muted" />
           )}
         </button>
 
         <div
           className={clsx(
-            'w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-xs border',
+            'w-7 h-7 rounded-lg flex items-center justify-center shrink-0 shadow-xs border',
             isUnfiled
               ? 'bg-black/5 dark:bg-white/5 border-app text-muted'
               : 'bg-primary/20 dark:bg-primary/25 border-primary/30 text-primary'
           )}
         >
-          <FolderIcon size={17} />
+          <FolderIcon size={15} />
         </div>
 
-        <div className="min-w-0 flex-1">
+        <div
+          className="min-w-0 flex-1 relative group/title"
+          title={label.toUpperCase()}
+        >
           <span
             className={clsx(
-              'block font-bold tracking-wider uppercase truncate',
-              isUnfiled ? 'text-[13px] text-muted' : 'text-sm text-[var(--text)]'
+              'block font-bold tracking-wider uppercase truncate transition-colors group-hover/title:text-primary',
+              isUnfiled ? 'text-[12px] text-muted' : 'text-[13px] text-[var(--text)]'
             )}
           >
             {label.toUpperCase()}
           </span>
+
+          {/* Floating full-name tooltip when hovering on folder name */}
+          <div
+            className="pointer-events-none absolute left-0 top-full mt-1.5 z-40 hidden group-hover/title:flex items-center gap-1.5 w-max max-w-[240px] surface-2 border border-primary/30 px-2.5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider text-[var(--text)] shadow-soft-dark break-words animate-fade-in"
+            style={{ wordBreak: 'break-word' }}
+          >
+            <FolderIcon size={12} className="text-primary shrink-0" />
+            <span className="leading-tight">{label.toUpperCase()}</span>
+          </div>
         </div>
 
         <span
           className={clsx(
-            'px-2 py-0.5 rounded-full text-xs font-semibold shrink-0',
+            'px-2 py-0.5 rounded-full text-[11px] font-semibold shrink-0',
             isUnfiled ? 'surface-2 text-muted border border-app' : 'bg-primary/15 text-primary'
           )}
         >
           {count}
         </span>
 
-        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition shrink-0">
-          {!isUnfiled && (
+        {/* Action items (+ new, edit/rename, delete) grouped in three-dot menu */}
+        {!isUnfiled && folder && (
+          <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                onNew(key);
+                setFolderMenuId(folderMenuId === key ? null : key);
               }}
-              className="btn-ghost !p-1 !rounded-md text-primary hover:bg-primary/10"
-              aria-label="New session in this folder"
-              title="Add session to this folder"
+              className={clsx(
+                'btn-ghost !p-1 !rounded-md transition text-muted hover:text-[var(--text)]',
+                folderMenuId === key ? 'opacity-100 bg-black/10 dark:bg-white/10 text-[var(--text)]' : 'opacity-0 group-hover:opacity-100'
+              )}
+              aria-label="Folder actions"
+              title="Folder options"
             >
-              <Plus size={14} />
+              <MoreHorizontal size={14} />
             </button>
-          )}
-          {actions}
-        </div>
+
+            {folderMenuId === key && (
+              <div
+                className="absolute right-0 top-8 z-30 surface border border-app rounded-xl shadow-soft-dark py-1.5 w-44 animate-slide-up text-xs font-normal"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFolderMenuId(null);
+                    onNew(key);
+                  }}
+                  className="w-full text-left px-3 py-2 hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2 text-primary font-medium transition-colors"
+                >
+                  <Plus size={14} />
+                  <span>New Session</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFolderMenuId(null);
+                    openRenameFolder(folder);
+                  }}
+                  className="w-full text-left px-3 py-2 hover:bg-black/5 dark:hover:bg-white/10 flex items-center gap-2 text-[var(--text)] transition-colors"
+                >
+                  <Pencil size={13} className="text-muted" />
+                  <span>Rename Folder</span>
+                </button>
+                <div className="h-[1px] bg-[var(--border)] my-1" />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFolderMenuId(null);
+                    onDeleteFolder(folder.id);
+                  }}
+                  className="w-full text-left px-3 py-2 text-red-500 hover:bg-red-500/10 flex items-center gap-2 transition-colors"
+                >
+                  <Trash2 size={13} />
+                  <span>Delete Folder</span>
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     );
   };
@@ -315,12 +373,7 @@ export function Sidebar({
               const items = grouped.get(f.id) ?? [];
               return (
                 <div key={f.id} className="mb-3">
-                  {renderFolderHeader(f.name, items.length, f.id, (
-                    <>
-                      <button onClick={(e) => { e.stopPropagation(); openRenameFolder(f); }} className="btn-ghost !p-1 !rounded-md" aria-label="Rename folder" title="Rename folder"><Pencil size={12} /></button>
-                      <button onClick={(e) => { e.stopPropagation(); onDeleteFolder(f.id); }} className="btn-ghost !p-1 !rounded-md text-red-500 hover:bg-red-500/10" aria-label="Delete folder" title="Delete folder"><Trash2 size={12} /></button>
-                    </>
-                  ))}
+                  {renderFolderHeader(f.name, items.length, f.id, f)}
                   {!collapsed[f.id] && (
                     <div className="pl-3.5 ml-4 border-l-2 border-primary/25 dark:border-primary/30 space-y-1 mb-2 mt-1 animate-fade-in">
                       {items.length === 0 ? (
@@ -360,6 +413,17 @@ export function Sidebar({
 
   return (
     <>
+      {/* Click-away backdrop to dismiss three-dot dropdown menus */}
+      {(folderMenuId || menuId) && (
+        <div
+          className="fixed inset-0 z-20"
+          onClick={() => {
+            setFolderMenuId(null);
+            setMenuId(null);
+          }}
+        />
+      )}
+
       {/* Mobile Drawer (visible only on mobile screens when mobileOpen is true) */}
       {mobileOpen && (
         <div className="md:hidden fixed inset-0 z-50 flex">
