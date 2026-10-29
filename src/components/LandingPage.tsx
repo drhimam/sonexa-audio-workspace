@@ -36,7 +36,7 @@ export function LandingPage({
             </div>
             <div>
               <span className="font-bold text-lg tracking-tight">Sonexa</span>
-              <span className="text-[10px] ml-1.5 px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">v1.2</span>
+              <span className="text-[10px] ml-1.5 px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">AI Meeting Copilot</span>
             </div>
           </div>
 
@@ -86,7 +86,7 @@ export function LandingPage({
         <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center relative z-10">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/30 bg-primary/5 text-primary text-xs font-medium mb-6 animate-fade-in">
             <Sparkles size={14} />
-            <span>Local-First Audio Intelligence · Cloudflare Synchronized</span>
+            <span>Local-First AI Speech Transcription, Meeting Intelligence & Document Generator</span>
           </div>
 
           <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-[var(--text)] leading-[1.12]">
@@ -472,7 +472,7 @@ export function LandingPage({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <AudioWaveform size={15} className="text-primary" />
-            <span className="font-semibold text-[var(--text)]">Sonexa Audio Workspace</span>
+            <span className="font-semibold text-[var(--text)]">Sonexa · AI Meeting Copilot</span>
             <span className="text-soft">· Local-first & Cloudflare Synced</span>
           </div>
           <div className="flex items-center gap-5 text-soft">

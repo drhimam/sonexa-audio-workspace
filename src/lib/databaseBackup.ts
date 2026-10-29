@@ -11,7 +11,7 @@ export interface SerializedAudioBlob {
 
 export interface SonexaDatabaseDump {
   version: 1;
-  app: 'Sonexa Audio Workspace';
+  app: 'Sonexa AI Meeting Copilot' | 'Sonexa Audio Workspace';
   exportedAt: number;
   metadata: {
     sessionCount: number;
@@ -116,7 +116,7 @@ export async function exportDatabaseToJson(
 
   const dump: SonexaDatabaseDump = {
     version: 1,
-    app: 'Sonexa Audio Workspace',
+    app: 'Sonexa AI Meeting Copilot',
     exportedAt: Date.now(),
     metadata: {
       sessionCount: sessions.length,
@@ -167,7 +167,7 @@ export async function inspectBackupFile(file: File): Promise<{
         const text = reader.result as string;
         const parsed = JSON.parse(text);
 
-        if (!parsed || parsed.app !== 'Sonexa Audio Workspace' || parsed.version !== 1) {
+        if (!parsed || (parsed.app !== 'Sonexa Audio Workspace' && parsed.app !== 'Sonexa AI Meeting Copilot') || parsed.version !== 1) {
           throw new Error('Invalid file format. This file is not a valid Sonexa backup JSON.');
         }
 

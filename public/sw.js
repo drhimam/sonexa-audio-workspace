@@ -1,4 +1,4 @@
-// Service Worker for Sonexa Audio Workspace (Offline Cache & PWA Installability)
+// Service Worker for Sonexa AI Meeting Copilot (Offline Cache & PWA Installability)
 
 const CACHE_NAME = 'sonexa-cache-v1';
 const STATIC_ASSETS = [

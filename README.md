@@ -1,4 +1,4 @@
-# 🎙️ Sonexa — Local-First Audio Intelligence & Cloudflare Sync
+# 🎙️ Sonexa — AI Meeting Copilot
 
 [![GitHub Stars](https://img.shields.io/github/stars/drhimam/sonexa-audio-workspace?style=flat-square)](https://github.com/drhimam/sonexa-audio-workspace)
 [![Cloudflare Pages](https://img.shields.io/badge/Deploy-Cloudflare%20Pages-f38020?style=flat-square&logo=cloudflare)](https://pages.cloudflare.com)
@@ -6,7 +6,9 @@
 [![Email](https://img.shields.io/badge/Transactional%20Email-ZeptoMail-blue?style=flat-square)](https://www.zoho.com/zeptomail/)
 [![License](https://img.shields.io/badge/License-MIT-gray?style=flat-square)](LICENSE)
 
-**Sonexa** is an AI-powered audio transcription, analysis, and document generation workbench. It offers a **dual-mode architecture**:
+> **Local-First AI Speech Transcription, Meeting Intelligence & Document Generator**
+
+**Sonexa** is an AI-powered audio transcription, meeting intelligence, and document generation workbench. It offers a **dual-mode architecture**:
 1. **100% Local-First Mode:** Works immediately in your browser using IndexedDB. No sign-in required, zero latency, full data privacy, and works completely offline.
 2. **Cloudflare Edge Sync Mode:** Optional opt-in multi-device synchronization powered by **Cloudflare D1** (Serverless SQLite) and **Cloudflare R2** (for audio storage), with account security verified through **ZeptoMail transactional emails**.
 

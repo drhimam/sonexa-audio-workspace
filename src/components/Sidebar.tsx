@@ -297,7 +297,7 @@ export function Sidebar({
             </div>
             <div className="leading-tight">
               <div className="text-sm font-semibold">Sonexa</div>
-              <div className="text-[10px] text-soft">Audio Workspace</div>
+              <div className="text-[10px] text-soft">AI Meeting Copilot</div>
             </div>
           </div>
           {onCloseMobile && (

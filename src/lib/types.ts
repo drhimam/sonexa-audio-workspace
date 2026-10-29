@@ -1,4 +1,4 @@
-// Shared domain types for Sonexa Audio Workspace
+// Shared domain types for Sonexa AI Meeting Copilot
 
 export type SessionStatus =
   | 'recording'

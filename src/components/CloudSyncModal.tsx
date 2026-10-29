@@ -60,10 +60,17 @@ export function CloudSyncModal({ open, onClose, cloudSync }: CloudSyncModalProps
   const [busy, setBusy] = useState(false);
   const [actionMessage, setActionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  const handleSelectActive = async (provider: 'google-drive' | 'onedrive' | 'webdav') => {
-    setActiveTab(provider);
+  const handleSelectActive = async (provider: 'google-drive' | 'onedrive' | 'webdav' | 'none') => {
+    if (provider !== 'none') {
+      setActiveTab(provider);
+    }
     await setActiveProvider(provider);
-    setActionMessage({ type: 'success', text: `Switched active cloud sync to ${CLOUD_PROVIDER_META[provider].name}` });
+    setActionMessage({
+      type: 'success',
+      text: provider === 'none'
+        ? 'Disabled cloud sync (Local-Only mode).'
+        : `Switched active cloud sync to ${CLOUD_PROVIDER_META[provider].name}`
+    });
   };
 
   const handleConnectGoogle = async () => {

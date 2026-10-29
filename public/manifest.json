@@ -1,7 +1,7 @@
 {
-  "name": "Sonexa — Local-First Audio Workspace",
+  "name": "Sonexa — AI Meeting Copilot",
   "short_name": "Sonexa",
-  "description": "Local-First AI Audio Workspace with Meeting Capture, System Audio Recording, and Cloudflare Sync",
+  "description": "Local-First AI Speech Transcription, Meeting Intelligence & Document Generator",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

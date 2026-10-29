@@ -403,8 +403,9 @@ function EmptyState({ onNew }: { onNew: () => void }) {
         <AudioWaveform size={28} className="text-primary" />
       </div>
       <h2 className="text-xl font-semibold">Welcome to Sonexa</h2>
+      <p className="text-xs font-semibold text-primary mt-1">AI Meeting Copilot</p>
       <p className="text-sm text-muted mt-2 max-w-md">
-        A local-first audio workspace. Record or upload audio, transcribe with multiple AI providers, enhance the transcript, chat with it, and generate structured documents — all from your browser.
+        Local-First AI Speech Transcription, Meeting Intelligence & Document Generator. Record or upload audio, transcribe with multiple AI providers, enhance the transcript, chat with it, and generate structured documents — all from your browser.
       </p>
       <button onClick={onNew} className="btn-primary mt-5"><Plus size={16} /> Start a new session</button>
       <p className="text-xs text-soft mt-4">Tip: add your API keys in Settings to enable live transcription and AI chat.</p>

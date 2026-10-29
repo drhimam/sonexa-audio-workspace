@@ -189,7 +189,7 @@ export async function syncWithGoogleDrive(
 
     const payload = JSON.stringify({
       version: 1,
-      app: 'Sonexa Audio Workspace',
+      app: 'Sonexa AI Meeting Copilot',
       exportedAt: Date.now(),
       sessions: allLocalSessions,
       folders: allLocalFolders,
