@@ -47,7 +47,7 @@ export async function sendZeptoEmail(
 
   // 3. Sender configuration
   const fromAddress = (env.ZEPTOMAIL_FROM_ADDRESS || 'noreply@sonexa.app').trim().replace(/^["']|["']$/g, '');
-  const fromName = (env.ZEPTOMAIL_FROM_NAME || 'Sonexa Audio Workspace').trim().replace(/^["']|["']$/g, '');
+  const fromName = (env.ZEPTOMAIL_FROM_NAME || 'Sonexa AI Meeting Copilot').trim().replace(/^["']|["']$/g, '');
 
   // 4. Construct payload
   // CRITICAL: bounce_address is strictly optional in ZeptoMail Send Mail API.
@@ -144,8 +144,8 @@ export function getVerificationEmailHtml(name: string, otpCode: string): string 
           <!-- Header -->
           <tr>
             <td style="padding: 32px 32px 20px; background: linear-gradient(135deg, #10a37f, #0c8c6d); text-align: center;">
-              <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">Sonexa Audio Workspace</h1>
-              <p style="color: rgba(255,255,255,0.85); margin: 6px 0 0; font-size: 13px;">Local-First Audio Intelligence & Cloud Sync</p>
+              <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">Sonexa</h1>
+              <p style="color: rgba(255,255,255,0.85); margin: 6px 0 0; font-size: 13px;">AI Meeting Copilot · Account Verification</p>
             </td>
           </tr>
           <!-- Body -->
@@ -201,8 +201,8 @@ export function getPasswordResetEmailHtml(name: string, otpCode: string): string
         <table width="100%" max-width="540" style="max-width: 540px; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.04);">
           <tr>
             <td style="padding: 32px 32px 20px; background: linear-gradient(135deg, #10a37f, #0c8c6d); text-align: center;">
-              <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 700;">Sonexa Audio Workspace</h1>
-              <p style="color: rgba(255,255,255,0.85); margin: 6px 0 0; font-size: 13px;">Security & Password Recovery</p>
+              <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 700;">Sonexa</h1>
+              <p style="color: rgba(255,255,255,0.85); margin: 6px 0 0; font-size: 13px;">AI Meeting Copilot · Password Recovery</p>
             </td>
           </tr>
           <tr>

@@ -17,4 +17,4 @@ database_id = "5dc09d8f-5fe1-45bc-b5bd-736746d16840"
 # npx wrangler pages secret put JWT_SECRET --project-name sonexa
 [vars]
 ENVIRONMENT = "production"
-ZEPTOMAIL_FROM_NAME = "Sonexa Audio Workspace"
+ZEPTOMAIL_FROM_NAME = "Sonexa AI Meeting Copilot"

@@ -13,7 +13,7 @@ export async function onRequestGet(context: { request: Request; env: any }) {
       isApiKeySet: hasKey,
       apiKeyPreview: keyPreview,
       fromAddress: env.ZEPTOMAIL_FROM_ADDRESS || 'noreply@sonexa.app (default)',
-      fromName: env.ZEPTOMAIL_FROM_NAME || 'Sonexa Audio Workspace (default)',
+      fromName: env.ZEPTOMAIL_FROM_NAME || 'Sonexa AI Meeting Copilot (default)',
       endpoint: env.ZEPTOMAIL_ENDPOINT || 'https://api.zeptomail.com/v1.1/email (default)',
       customBounceAddressSet: !!env.ZEPTOMAIL_BOUNCE_ADDRESS,
     },
