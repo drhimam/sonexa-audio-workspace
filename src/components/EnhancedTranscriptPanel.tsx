@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
 import {
-  Wand2, Loader2, FileText, Sparkles, Tag, RefreshCw, AlertCircle, Check, Copy, Download,
+  Wand2, Loader2, FileText, Sparkles, Tag, RefreshCw, AlertCircle, Check, Copy, Download, Clock,
 } from 'lucide-react';
 import type { EnhancedTranscript, TranscriptData } from '@/lib/types';
-import { formatTimestamp } from '@/lib/utils';
+import { formatTimestamp, clsx } from '@/lib/utils';
 import {
   copyToClipboard,
   downloadMarkdown,
@@ -21,32 +21,50 @@ interface EnhancedTranscriptPanelProps {
   error: string | null;
   onGenerate: () => void;
   onRegenerate: () => void;
+  showTimestamps?: boolean;
+  onToggleTimestamps?: () => void;
 }
 
 export function EnhancedTranscriptPanel({
   sessionTitle, raw, enhanced, enhancing, error, onGenerate, onRegenerate,
+  showTimestamps, onToggleTimestamps,
 }: EnhancedTranscriptPanelProps) {
   const [copied, setCopied] = useState(false);
   const hasRaw = !!raw && raw.segments.length > 0;
 
+  const [localShowTimestamps, setLocalShowTimestamps] = useState<boolean>(() => {
+    return localStorage.getItem('sonexa_show_timestamps') !== 'false';
+  });
+  const activeShowTimestamps = showTimestamps ?? localShowTimestamps;
+
+  const handleToggleTimestamps = () => {
+    if (onToggleTimestamps) {
+      onToggleTimestamps();
+    } else {
+      setLocalShowTimestamps((prev) => {
+        const next = !prev;
+        localStorage.setItem('sonexa_show_timestamps', String(next));
+        return next;
+      });
+    }
+  };
+
   const handleDownloadTxt = () => {
     if (!enhanced) return;
     const filename = `${slug(sessionTitle || 'transcript')}-enhanced.txt`;
-    downloadPlainText(filename, enhancedTranscriptToPlainText(enhanced, sessionTitle));
+    downloadPlainText(filename, enhancedTranscriptToPlainText(enhanced, sessionTitle, { includeTimestamps: activeShowTimestamps }));
   };
 
   const handleDownloadMd = () => {
     if (!enhanced) return;
     const filename = `${slug(sessionTitle || 'transcript')}-enhanced.md`;
-    downloadMarkdown(filename, enhancedTranscriptToMarkdown(enhanced, sessionTitle));
+    downloadMarkdown(filename, enhancedTranscriptToMarkdown(enhanced, sessionTitle, { includeTimestamps: activeShowTimestamps }));
   };
 
   const fullText = useMemo(() => {
     if (!enhanced) return '';
-    return enhanced.segments
-      .map((s) => `[${formatTimestamp(s.start)}] ${s.speaker ? `${s.speaker}: ` : ''}${s.text}`)
-      .join('\n');
-  }, [enhanced]);
+    return enhancedTranscriptToPlainText(enhanced, sessionTitle, { includeTimestamps: activeShowTimestamps });
+  }, [enhanced, sessionTitle, activeShowTimestamps]);
 
   const handleCopy = async () => {
     const ok = await copyToClipboard(fullText);
@@ -101,7 +119,33 @@ export function EnhancedTranscriptPanel({
         <Sparkles size={15} className="text-primary" />
         <h3 className="text-sm font-semibold">Enhanced transcript</h3>
         <span className="chip surface-2 text-muted ml-1">{enhanced.segments.length} segments</span>
-        <div className="ml-auto flex items-center gap-1">
+        <div className="ml-auto flex items-center gap-1.5 flex-wrap">
+          {/* Timestamps toggle button */}
+          <button
+            type="button"
+            onClick={handleToggleTimestamps}
+            className={clsx(
+              'btn-ghost !py-1 !px-2.5 text-xs flex items-center gap-1.5 rounded-lg border transition-all',
+              activeShowTimestamps
+                ? 'border-primary/40 bg-primary/10 text-primary font-medium shadow-xs'
+                : 'border-app text-muted hover:text-[var(--text)]'
+            )}
+            title={activeShowTimestamps ? 'Click to hide time segments' : 'Click to show time segments'}
+          >
+            <Clock size={13} className={activeShowTimestamps ? 'text-primary' : 'text-muted'} />
+            <span className="hidden sm:inline">Timestamps</span>
+            <span
+              className={clsx(
+                'text-[10px] px-1 py-0.2 rounded font-semibold',
+                activeShowTimestamps
+                  ? 'bg-primary/20 text-primary'
+                  : 'bg-black/10 dark:bg-white/10 text-muted'
+              )}
+            >
+              {activeShowTimestamps ? 'ON' : 'OFF'}
+            </span>
+          </button>
+
           <button onClick={handleCopy} className="btn-ghost !py-1.5 !px-2 text-xs" title="Copy transcript">
             {copied ? <Check size={13} className="text-primary" /> : <Copy size={13} />} Copy
           </button>
@@ -141,10 +185,17 @@ export function EnhancedTranscriptPanel({
       <div className="flex-1 overflow-y-auto scroll-thin px-2 py-2">
         {enhanced.segments.map((s) => (
           <div key={s.id} className="rounded-lg px-3 py-2 mb-1 hover:bg-black/[0.03] dark:hover:bg-white/[0.04] transition-colors">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="font-mono text-[11px] tabular-nums text-primary">{formatTimestamp(s.start)}</span>
-              {s.speaker && <span className="chip surface-2 text-muted !py-0.5">{s.speaker}</span>}
-            </div>
+            {(activeShowTimestamps || s.speaker) && (
+              <div className="flex items-center gap-2 mb-1">
+                {activeShowTimestamps && (
+                  <span className="font-mono text-[11px] tabular-nums text-primary flex items-center gap-1">
+                    <Clock size={11} className="text-primary/70" />
+                    <span>{formatTimestamp(s.start)}</span>
+                  </span>
+                )}
+                {s.speaker && <span className="chip surface-2 text-muted !py-0.5">{s.speaker}</span>}
+              </div>
+            )}
             <p className="text-sm leading-relaxed text-[var(--text)]">{s.text}</p>
           </div>
         ))}

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Loader2, Pencil, Check, X, FileText, Search, Download, Copy } from 'lucide-react';
+import { Loader2, Pencil, Check, X, FileText, Search, Download, Copy, Clock } from 'lucide-react';
 import type { TranscriptData, TranscriptSegment } from '@/lib/types';
 import { formatTimestamp, clsx, uid } from '@/lib/utils';
 import {
@@ -19,20 +19,49 @@ interface TranscriptViewProps {
   currentSec?: number;
   onSeek?: (sec: number) => void;
   onChange: (t: TranscriptData) => void;
+  showTimestamps?: boolean;
+  onToggleTimestamps?: () => void;
 }
 
 type SessionStatusLite = 'recording' | 'recorded' | 'transcribing' | 'transcribed' | 'enhancing' | 'enhanced' | 'error';
 
-export function TranscriptView({ sessionTitle, transcript, status, progressLabel, currentSec, onSeek, onChange }: TranscriptViewProps) {
+export function TranscriptView({
+  sessionTitle,
+  transcript,
+  status,
+  progressLabel,
+  currentSec,
+  onSeek,
+  onChange,
+  showTimestamps,
+  onToggleTimestamps,
+}: TranscriptViewProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
   const [query, setQuery] = useState('');
   const [copied, setCopied] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
 
+  const [localShowTimestamps, setLocalShowTimestamps] = useState<boolean>(() => {
+    return localStorage.getItem('sonexa_show_timestamps') !== 'false';
+  });
+  const activeShowTimestamps = showTimestamps ?? localShowTimestamps;
+
+  const handleToggleTimestamps = () => {
+    if (onToggleTimestamps) {
+      onToggleTimestamps();
+    } else {
+      setLocalShowTimestamps((prev) => {
+        const next = !prev;
+        localStorage.setItem('sonexa_show_timestamps', String(next));
+        return next;
+      });
+    }
+  };
+
   const handleCopy = async () => {
     if (!transcript) return;
-    const txt = transcriptToPlainText(transcript, sessionTitle);
+    const txt = transcriptToPlainText(transcript, sessionTitle, { includeTimestamps: activeShowTimestamps });
     const ok = await copyToClipboard(txt);
     if (ok) {
       setCopied(true);
@@ -43,13 +72,13 @@ export function TranscriptView({ sessionTitle, transcript, status, progressLabel
   const handleDownloadTxt = () => {
     if (!transcript) return;
     const filename = `${slug(sessionTitle || 'transcript')}-raw.txt`;
-    downloadPlainText(filename, transcriptToPlainText(transcript, sessionTitle));
+    downloadPlainText(filename, transcriptToPlainText(transcript, sessionTitle, { includeTimestamps: activeShowTimestamps }));
   };
 
   const handleDownloadMd = () => {
     if (!transcript) return;
     const filename = `${slug(sessionTitle || 'transcript')}-raw.md`;
-    downloadMarkdown(filename, transcriptToMarkdown(transcript, sessionTitle));
+    downloadMarkdown(filename, transcriptToMarkdown(transcript, sessionTitle, { includeTimestamps: activeShowTimestamps }));
   };
 
   const activeId = useMemo(() => {
@@ -118,6 +147,32 @@ export function TranscriptView({ sessionTitle, transcript, status, progressLabel
         <span className="chip surface-2 text-muted ml-1">{transcript.segments.length} segments</span>
 
         <div className="ml-auto flex items-center gap-1.5 flex-wrap">
+          {/* Timestamps toggle button */}
+          <button
+            type="button"
+            onClick={handleToggleTimestamps}
+            className={clsx(
+              'btn-ghost !py-1 !px-2.5 text-xs flex items-center gap-1.5 rounded-lg border transition-all',
+              activeShowTimestamps
+                ? 'border-primary/40 bg-primary/10 text-primary font-medium shadow-xs'
+                : 'border-app text-muted hover:text-[var(--text)]'
+            )}
+            title={activeShowTimestamps ? 'Click to hide time segments' : 'Click to show time segments'}
+          >
+            <Clock size={13} className={activeShowTimestamps ? 'text-primary' : 'text-muted'} />
+            <span className="hidden sm:inline">Timestamps</span>
+            <span
+              className={clsx(
+                'text-[10px] px-1 py-0.2 rounded font-semibold',
+                activeShowTimestamps
+                  ? 'bg-primary/20 text-primary'
+                  : 'bg-black/10 dark:bg-white/10 text-muted'
+              )}
+            >
+              {activeShowTimestamps ? 'ON' : 'OFF'}
+            </span>
+          </button>
+
           <div className="relative">
             <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-soft" />
             <input
@@ -171,18 +226,22 @@ export function TranscriptView({ sessionTitle, transcript, status, progressLabel
               )}
             >
               <div className="flex items-center gap-2 mb-1">
-                <button
-                  onClick={() => onSeek?.(s.start)}
-                  className="font-mono text-[11px] tabular-nums text-primary hover:underline"
-                >
-                  {formatTimestamp(s.start)}
-                </button>
+                {activeShowTimestamps && (
+                  <button
+                    onClick={() => onSeek?.(s.start)}
+                    className="font-mono text-[11px] tabular-nums text-primary hover:underline flex items-center gap-1"
+                    title="Click to seek audio to this timestamp"
+                  >
+                    <Clock size={11} className="text-primary/70" />
+                    <span>{formatTimestamp(s.start)}</span>
+                  </button>
+                )}
                 {s.speaker && <span className="chip surface-2 text-muted !py-0.5">{s.speaker}</span>}
                 <div className="ml-auto flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition">
                   {!editing && (
                     <>
-                      <button onClick={() => startEdit(s)} className="btn-ghost !px-1.5 !py-1 rounded-md" aria-label="Edit"><Pencil size={12} /></button>
-                      <button onClick={() => addSegmentAfter(s.id)} className="btn-ghost !px-1.5 !py-1 rounded-md" aria-label="Add segment">+</button>
+                      <button onClick={() => startEdit(s)} className="btn-ghost !px-1.5 !py-1 rounded-md" aria-label="Edit" title="Edit text"><Pencil size={12} /></button>
+                      <button onClick={() => addSegmentAfter(s.id)} className="btn-ghost !px-1.5 !py-1 rounded-md" aria-label="Add segment" title="Add segment after">+</button>
                     </>
                   )}
                 </div>

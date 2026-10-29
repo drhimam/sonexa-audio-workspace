@@ -62,6 +62,18 @@ export function Workspace({ session, settings, onSessionChange }: WorkspaceProps
   const [enhanceError, setEnhanceError] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(session.title);
+  const [showTimestamps, setShowTimestamps] = useState<boolean>(() => {
+    return localStorage.getItem('sonexa_show_timestamps') !== 'false';
+  });
+
+  const handleToggleTimestamps = () => {
+    setShowTimestamps((prev) => {
+      const next = !prev;
+      localStorage.setItem('sonexa_show_timestamps', String(next));
+      return next;
+    });
+  };
+
   const abortTranscribe = useRef<AbortController | null>(null);
   const abortEnhance = useRef<AbortController | null>(null);
 
@@ -322,6 +334,8 @@ export function Workspace({ session, settings, onSessionChange }: WorkspaceProps
             status={session.status}
             progressLabel={transcribeProgress?.label}
             onChange={updateTranscript}
+            showTimestamps={showTimestamps}
+            onToggleTimestamps={handleToggleTimestamps}
           />
         )}
         {tab === 'enhanced' && (
@@ -333,6 +347,8 @@ export function Workspace({ session, settings, onSessionChange }: WorkspaceProps
             error={enhanceError}
             onGenerate={runEnhance}
             onRegenerate={runEnhance}
+            showTimestamps={showTimestamps}
+            onToggleTimestamps={handleToggleTimestamps}
           />
         )}
         {tab === 'chat' && (

@@ -37,7 +37,16 @@ export function downloadPlainText(filename: string, text: string): void {
   downloadBlob(filename, new Blob([text], { type: 'text/plain;charset=utf-8' }));
 }
 
-export function transcriptToPlainText(transcript: TranscriptData, sessionTitle?: string): string {
+export interface ExportOptions {
+  includeTimestamps?: boolean;
+}
+
+export function transcriptToPlainText(
+  transcript: TranscriptData,
+  sessionTitle?: string,
+  options?: ExportOptions
+): string {
+  const withTime = options?.includeTimestamps ?? true;
   const lines: string[] = [];
   if (sessionTitle) {
     lines.push(sessionTitle);
@@ -56,15 +65,20 @@ export function transcriptToPlainText(transcript: TranscriptData, sessionTitle?:
   }
 
   for (const s of transcript.segments) {
-    const time = `[${formatTimestamp(s.start)}]`;
+    const time = withTime ? `[${formatTimestamp(s.start)}] ` : '';
     const speaker = s.speaker ? `${s.speaker}: ` : '';
-    lines.push(`${time} ${speaker}${s.text}`);
+    lines.push(`${time}${speaker}${s.text}`);
   }
 
   return lines.join('\n');
 }
 
-export function transcriptToMarkdown(transcript: TranscriptData, sessionTitle?: string): string {
+export function transcriptToMarkdown(
+  transcript: TranscriptData,
+  sessionTitle?: string,
+  options?: ExportOptions
+): string {
+  const withTime = options?.includeTimestamps ?? true;
   const lines: string[] = [];
   lines.push(`# ${sessionTitle || 'Audio Transcript'}`);
   lines.push('');
@@ -80,9 +94,19 @@ export function transcriptToMarkdown(transcript: TranscriptData, sessionTitle?: 
   lines.push('');
 
   for (const s of transcript.segments) {
-    const header = s.speaker ? `### [${formatTimestamp(s.start)}] ${s.speaker}` : `**[${formatTimestamp(s.start)}]**`;
-    lines.push(header);
-    lines.push('');
+    let header = '';
+    if (withTime && s.speaker) {
+      header = `### [${formatTimestamp(s.start)}] ${s.speaker}`;
+    } else if (withTime) {
+      header = `**[${formatTimestamp(s.start)}]**`;
+    } else if (s.speaker) {
+      header = `### ${s.speaker}`;
+    }
+
+    if (header) {
+      lines.push(header);
+      lines.push('');
+    }
     lines.push(s.text);
     lines.push('');
   }
@@ -90,7 +114,12 @@ export function transcriptToMarkdown(transcript: TranscriptData, sessionTitle?: 
   return lines.join('\n').trim();
 }
 
-export function enhancedTranscriptToPlainText(enhanced: EnhancedTranscript, sessionTitle?: string): string {
+export function enhancedTranscriptToPlainText(
+  enhanced: EnhancedTranscript,
+  sessionTitle?: string,
+  options?: ExportOptions
+): string {
+  const withTime = options?.includeTimestamps ?? true;
   const lines: string[] = [];
   const heading = `${sessionTitle || 'Audio Transcript'} (Enhanced)`;
   lines.push(heading);
@@ -114,15 +143,20 @@ export function enhancedTranscriptToPlainText(enhanced: EnhancedTranscript, sess
   lines.push('TRANSCRIPT');
   lines.push('----------');
   for (const s of enhanced.segments) {
-    const time = `[${formatTimestamp(s.start)}]`;
+    const time = withTime ? `[${formatTimestamp(s.start)}] ` : '';
     const speaker = s.speaker ? `${s.speaker}: ` : '';
-    lines.push(`${time} ${speaker}${s.text}`);
+    lines.push(`${time}${speaker}${s.text}`);
   }
 
   return lines.join('\n');
 }
 
-export function enhancedTranscriptToMarkdown(enhanced: EnhancedTranscript, sessionTitle?: string): string {
+export function enhancedTranscriptToMarkdown(
+  enhanced: EnhancedTranscript,
+  sessionTitle?: string,
+  options?: ExportOptions
+): string {
+  const withTime = options?.includeTimestamps ?? true;
   const lines: string[] = [];
   lines.push(`# ${sessionTitle || 'Audio Transcript'} — Enhanced`);
   lines.push('');
@@ -145,9 +179,19 @@ export function enhancedTranscriptToMarkdown(enhanced: EnhancedTranscript, sessi
   lines.push('');
 
   for (const s of enhanced.segments) {
-    const header = s.speaker ? `### [${formatTimestamp(s.start)}] ${s.speaker}` : `**[${formatTimestamp(s.start)}]**`;
-    lines.push(header);
-    lines.push('');
+    let header = '';
+    if (withTime && s.speaker) {
+      header = `### [${formatTimestamp(s.start)}] ${s.speaker}`;
+    } else if (withTime) {
+      header = `**[${formatTimestamp(s.start)}]**`;
+    } else if (s.speaker) {
+      header = `### ${s.speaker}`;
+    }
+
+    if (header) {
+      lines.push(header);
+      lines.push('');
+    }
     lines.push(s.text);
     lines.push('');
   }
